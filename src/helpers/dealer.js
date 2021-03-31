@@ -11,6 +11,8 @@ export default class dealCards {
                 }
             }).then(r => {
                 scene.load.json('cardJson', r);
+            }).catch(err=>{
+                console.log(err);
             });
         }
     }
