@@ -1,3 +1,4 @@
+import io from 'socket.io-client';
 import Card from '../helpers/card';
 import Board from '../helpers/board';
 import propBox from "../helpers/propBox";
@@ -11,13 +12,18 @@ export default class Game extends Phaser.Scene {
     }
 
     preload() {
-        this.dealer = new dealCards(this).deal();
+        // this.dealer = new dealCards(this).deal();
         this.load.image('front', 'src/assets/front.png');
         this.load.image('back', 'src/assets/back.png');
+        this.socket = io('http://localhost:3000', {
+            withCredentials: true
+        });
     }
 
     create() {
+        console.log('CREATED!!!!!!');
         let self = this;
+        
 
         //Render button
         this.dealText = this.add.text(75, 350, ['End Round'])
@@ -43,9 +49,9 @@ export default class Game extends Phaser.Scene {
         }
 
         //End round button
-        this.dealCards = () => {
+        // this.dealCards = () => {
 
-        }
+        // }
 
 
         //events
@@ -84,6 +90,35 @@ export default class Game extends Phaser.Scene {
             gameObject.x = (dropZone.x - 350) + (dropZone.data.values.cards * 50);
             gameObject.y = dropZone.y;
             gameObject.disableInteractive();
+        })
+
+        
+
+        this.socket.on('connect', function () {
+            console.log('Connected!');
+        });
+
+        this.socket.on('connect', function () {
+            console.log('Connected!');
+        });
+
+        this.socket.on('isPlayerA', function () {
+            self.isPlayerA = true;
+        })
+
+        this.socket.on('dealCards', function () {
+            self.dealer.dealCards();
+            self.dealText.disableInteractive();
+        })
+
+        this.socket.on('cardPlayed', function (gameObject, isPlayerA) {
+            if (isPlayerA !== self.isPlayerA) {
+                let sprite = gameObject.textureKey;
+                self.opponentCards.shift().destroy();
+                self.dropZone.data.values.cards++;
+                let card = new Card(self);
+                card.render(((self.dropZone.x - 350) + (self.dropZone.data.values.cards * 50)), (self.dropZone.y), sprite).disableInteractive();
+            }
         })
 
 
