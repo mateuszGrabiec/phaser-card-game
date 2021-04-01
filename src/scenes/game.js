@@ -21,7 +21,6 @@ export default class Game extends Phaser.Scene {
     }
 
     create() {
-        console.log('CREATED!!!!!!');
         let self = this;
         
 
@@ -98,28 +97,23 @@ export default class Game extends Phaser.Scene {
             console.log('Connected!');
         });
 
-        this.socket.on('connect', function () {
-            console.log('Connected!');
+        this.socket.on('hello', function () {
+            console.log('Hello from server!');
         });
 
-        this.socket.on('isPlayerA', function () {
-            self.isPlayerA = true;
-        })
+        this.socket.on('error', function (err) {
+            console.log(err);
+        });
 
-        this.socket.on('dealCards', function () {
-            self.dealer.dealCards();
-            self.dealText.disableInteractive();
-        })
+        this.socket.on('disconnected', function () {
+            console.log('disconnected');
+        });
 
-        this.socket.on('cardPlayed', function (gameObject, isPlayerA) {
-            if (isPlayerA !== self.isPlayerA) {
-                let sprite = gameObject.textureKey;
-                self.opponentCards.shift().destroy();
-                self.dropZone.data.values.cards++;
-                let card = new Card(self);
-                card.render(((self.dropZone.x - 350) + (self.dropZone.data.values.cards * 50)), (self.dropZone.y), sprite).disableInteractive();
-            }
-        })
+        this.socket.on('sendTable', function (data) {
+            console.log(data);
+        });
+
+        this.socket.emit("getTable");
 
 
     }
