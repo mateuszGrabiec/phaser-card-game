@@ -2,7 +2,6 @@ import io from 'socket.io-client';
 import Card from '../helpers/card';
 import Board from '../helpers/board';
 import propBox from "../helpers/propBox";
-import dealCards from "../helpers/dealer";
 
 export default class Game extends Phaser.Scene {
     constructor() {
@@ -12,28 +11,41 @@ export default class Game extends Phaser.Scene {
     }
 
     preload() {
-        // this.dealer = new dealCards(this).deal();
-        this.load.image('front', 'src/assets/front.png');
-        this.load.image('back', 'src/assets/back.png');
+        this.load.json('card', 'http://localhost:3000/card')
         this.socket = io('http://localhost:3000', {
             withCredentials: true
         });
+        this.load.image('card', 'https://c0.klipartz.com/pngpicture/870/609/gratis-png-dire-topo-piedra-del-hogar-creeper2-leeroy-jenkins-crepitante-maquinilla-de-afeitar-hearthstone.png')
+        this.load.once('complete', function(){
+            for(let i = 0; i<this.cache.json.get('card').body.length; i++){
+                console.log(this.cache.json.get('card').body[i].image)
+                this.load.image('card'+i, this.cache.json.get('card').body[i].image)
+            }
+        }, this);
+
     }
 
     create() {
         let self = this;
-        
-
         //Render button
         this.dealText = this.add.text(75, 350, ['End Round'])
             .setFontSize(18).setFontFamily('Roboto').setColor('white').setInteractive();
-
-
-
+    
         //Render board
         this.zone = new Board(this);
-        this.dropZone = this.zone.renderZone();
-        this.outline = this.zone.renderOutline(this.dropZone);
+
+        //PlayerA
+        this.dropZone = this.zone.renderZone(600, 575);
+        this.outline = this.zone.renderOutline(this.dropZone, 0x69ff8a);
+
+        this.dropZone = this.zone.renderZone(600, 450);
+        this.outline = this.zone.renderOutline(this.dropZone, 0x69ff8a);
+
+        //PlayerB
+        this.outline = this.zone.renderOutlineWithoutDropZone(600,275,0xfc3549);
+        this.outline = this.zone.renderOutlineWithoutDropZone(600, 150, 0xfc3549);
+
+        
 
         //render prop Box
 
@@ -42,10 +54,16 @@ export default class Game extends Phaser.Scene {
 
 
         //render cards
-        for (let i = 0; i < 5; i++) {
+        /*for (let i = 0; i < 5; i++) {
             let playerCard = new Card(this);
-            playerCard.render(475 + (i * 100), 650, 'front');
+            playerCard.render(275 + (i * 100), 710, 'front');
         }
+        */
+
+       for (let i = 0; i<this.cache.json.get('card').body.length; i++){
+           let playerCard = new Card(this);
+           playerCard.render(275 +(i * 100), 710, 'card')
+       }
 
         //End round button
         // this.dealCards = () => {
