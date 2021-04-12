@@ -15,18 +15,13 @@ export default class Game extends Phaser.Scene {
         this.socket = io('http://localhost:3000', {
             withCredentials: true
         });
-        this.load.image('card', 'https://c0.klipartz.com/pngpicture/870/609/gratis-png-dire-topo-piedra-del-hogar-creeper2-leeroy-jenkins-crepitante-maquinilla-de-afeitar-hearthstone.png')
-        this.load.once('complete', function(){
-            for(let i = 0; i<this.cache.json.get('card').body.length; i++){
-                console.log(this.cache.json.get('card').body[i].image)
-                this.load.image('card'+i, this.cache.json.get('card').body[i].image)
-            }
-        }, this);
+
 
     }
 
     create() {
-        let self = this;
+        let self = this;        
+        
         //Render button
         this.dealText = this.add.text(75, 350, ['End Round'])
             .setFontSize(18).setFontFamily('Roboto').setColor('white').setInteractive();
@@ -60,16 +55,36 @@ export default class Game extends Phaser.Scene {
         }
         */
 
+        let loader = new Phaser.Loader.LoaderPlugin(self); 
        for (let i = 0; i<this.cache.json.get('card').body.length; i++){
-           let playerCard = new Card(this);
-           playerCard.render(275 +(i * 100), 710, 'card')
-       }
+            let name = "card" + i
+            let src = "src/assets/" + this.cache.json.get('card').body[i].image
+            let power = this.cache.json.get('card').body[i].power
+            let shield = this.cache.json.get('card').body[i].shield
+            let nameDb = this.cache.json.get('card').body[i].name
+            let describe = this.cache.json.get('card').body[i].describe
+            loader.image(name, src)
+            let playerCard = new Card(this);
+            loader.once(Phaser.Loader.Events.COMPLETE, () => {
+                playerCard.render(275 +(i * 100), 710, name, nameDb, power, shield, describe)
+            });
+        }
+        loader.start();
 
         //End round button
         // this.dealCards = () => {
 
         // }
 
+        //Render a text in prop-box
+        this.nameText = this.add.text(1040,250, ['Name:'])
+        this.nameValue = this.add.text(1100,250, [])
+        this.describtionText = this.add.text(1040,280, ['Describtion:'])
+        this.descriptionValue = this.add.text(1040,310, [])
+        this.powerText = this.add.text(1040,340, ['Power:'])
+        this.powerValue = this.add.text(1130,340, [])
+        this.powerText = this.add.text(1040,380, ['Shield:'])
+        this.shieldValue = this.add.text(1140,380, [])
 
         //events
         this.dealText.on('pointerdown', function () {
@@ -85,6 +100,10 @@ export default class Game extends Phaser.Scene {
         })
 
         this.input.on('drag', function (pointer, gameObject, dragX, dragY) {
+            self.nameValue.text = gameObject.name
+            self.descriptionValue.text = gameObject.description
+            self.powerValue.text = gameObject.power
+            self.shieldValue.text = gameObject.shield
             gameObject.x = dragX;
             gameObject.y = dragY;
         });
@@ -96,6 +115,10 @@ export default class Game extends Phaser.Scene {
 
         this.input.on('dragend', function (pointer, gameObject, dropped) {
             gameObject.setTint();
+            self.nameValue.text = ""
+            self.descriptionValue.text = ""
+            self.powerValue.text = ""
+            self.shieldValue.text = ""
             if (!dropped) {
                 gameObject.x = gameObject.input.dragStartX;
                 gameObject.y = gameObject.input.dragStartY;
