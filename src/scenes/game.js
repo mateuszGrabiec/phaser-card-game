@@ -11,8 +11,8 @@ export default class Game extends Phaser.Scene {
     }
 
     preload() {
-        this.load.json('card', 'http://localhost:3000/card')
-        this.socket = io('http://localhost:3000', {
+        this.load.json('card', ENDPOINT+'/card')
+        this.socket = io(ENDPOINT, {
             withCredentials: true
         });
 
@@ -21,7 +21,7 @@ export default class Game extends Phaser.Scene {
 
     create() {
         let self = this;        
-        
+        console.log(ENDPOINT);
         //Render button
         this.dealText = this.add.text(75, 350, ['End Round'])
             .setFontSize(18).setFontFamily('Roboto').setColor('white').setInteractive();
@@ -47,13 +47,6 @@ export default class Game extends Phaser.Scene {
         this.box = new propBox(this);
         this.box.render();
 
-
-        //render cards
-        /*for (let i = 0; i < 5; i++) {
-            let playerCard = new Card(this);
-            playerCard.render(275 + (i * 100), 710, 'front');
-        }
-        */
 
         let loader = new Phaser.Loader.LoaderPlugin(self); 
        for (let i = 0; i<this.cache.json.get('card').body.length; i++){
