@@ -2,7 +2,6 @@ import io from 'socket.io-client';
 import Card from '../helpers/card';
 import Board from '../helpers/board';
 import propBox from "../helpers/propBox";
-import dealCards from "../helpers/dealer";
 
 export default class Game extends Phaser.Scene {
     constructor() {
@@ -12,28 +11,36 @@ export default class Game extends Phaser.Scene {
     }
 
     preload() {
-        // this.dealer = new dealCards(this).deal();
-        this.load.image('front', 'src/assets/front.png');
-        this.load.image('back', 'src/assets/back.png');
-        this.socket = io('http://localhost:3000', {
+        this.load.json('card', ENDPOINT+'/card')
+        this.socket = io(ENDPOINT, {
             withCredentials: true
         });
+
+
     }
 
     create() {
-        let self = this;
-        
-
+        let self = this;        
+        console.log(ENDPOINT);
         //Render button
         this.dealText = this.add.text(75, 350, ['End Round'])
             .setFontSize(18).setFontFamily('Roboto').setColor('white').setInteractive();
-
-
-
+    
         //Render board
         this.zone = new Board(this);
-        this.dropZone = this.zone.renderZone();
-        this.outline = this.zone.renderOutline(this.dropZone);
+
+        //PlayerA
+        this.dropZone = this.zone.renderZone(600, 575);
+        this.outline = this.zone.renderOutline(this.dropZone, 0x69ff8a);
+
+        this.dropZone = this.zone.renderZone(600, 450);
+        this.outline = this.zone.renderOutline(this.dropZone, 0x69ff8a);
+
+        //PlayerB
+        this.outline = this.zone.renderOutlineWithoutDropZone(600,275,0xfc3549);
+        this.outline = this.zone.renderOutlineWithoutDropZone(600, 150, 0xfc3549);
+
+        
 
         //render prop Box
 
@@ -41,17 +48,36 @@ export default class Game extends Phaser.Scene {
         this.box.render();
 
 
-        //render cards
-        for (let i = 0; i < 5; i++) {
+        let loader = new Phaser.Loader.LoaderPlugin(self); 
+       for (let i = 0; i<this.cache.json.get('card').body.length; i++){
+            let name = "card" + i
+            let src = "src/assets/" + this.cache.json.get('card').body[i].image
+            let power = this.cache.json.get('card').body[i].power
+            let shield = this.cache.json.get('card').body[i].shield
+            let nameDb = this.cache.json.get('card').body[i].name
+            let describe = this.cache.json.get('card').body[i].describe
+            loader.image(name, src)
             let playerCard = new Card(this);
-            playerCard.render(475 + (i * 100), 650, 'front');
+            loader.once(Phaser.Loader.Events.COMPLETE, () => {
+                playerCard.render(275 +(i * 100), 710, name, nameDb, power, shield, describe)
+            });
         }
+        loader.start();
 
         //End round button
         // this.dealCards = () => {
 
         // }
 
+        //Render a text in prop-box
+        this.nameText = this.add.text(1040,250, ['Name:'])
+        this.nameValue = this.add.text(1100,250, [])
+        this.describtionText = this.add.text(1040,280, ['Describtion:'])
+        this.descriptionValue = this.add.text(1040,310, [])
+        this.powerText = this.add.text(1040,340, ['Power:'])
+        this.powerValue = this.add.text(1130,340, [])
+        this.powerText = this.add.text(1040,380, ['Shield:'])
+        this.shieldValue = this.add.text(1140,380, [])
 
         //events
         this.dealText.on('pointerdown', function () {
@@ -67,6 +93,10 @@ export default class Game extends Phaser.Scene {
         })
 
         this.input.on('drag', function (pointer, gameObject, dragX, dragY) {
+            self.nameValue.text = gameObject.name
+            self.descriptionValue.text = gameObject.description
+            self.powerValue.text = gameObject.power
+            self.shieldValue.text = gameObject.shield
             gameObject.x = dragX;
             gameObject.y = dragY;
         });
@@ -78,6 +108,10 @@ export default class Game extends Phaser.Scene {
 
         this.input.on('dragend', function (pointer, gameObject, dropped) {
             gameObject.setTint();
+            self.nameValue.text = ""
+            self.descriptionValue.text = ""
+            self.powerValue.text = ""
+            self.shieldValue.text = ""
             if (!dropped) {
                 gameObject.x = gameObject.input.dragStartX;
                 gameObject.y = gameObject.input.dragStartY;
