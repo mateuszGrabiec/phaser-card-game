@@ -1,7 +1,8 @@
 import io from 'socket.io-client';
-import Card from '../helpers/card';
+
 import Board from '../helpers/board';
 import propBox from "../helpers/propBox";
+import CardManager from '../helpers/cardManager';
 
 export default class Game extends Phaser.Scene {
     constructor() {
@@ -12,7 +13,6 @@ export default class Game extends Phaser.Scene {
 
     preload() {
         //tutaj można włączyć loader
-        var self = this;
         this.load.json('card', ENDPOINT + '/decks/current', null, { withCredentials: true })
             this.socket = io(ENDPOINT, {
                 withCredentials: true
@@ -39,7 +39,7 @@ export default class Game extends Phaser.Scene {
         }
 
         var failureCallback = function () {
-            window.location = ENDPOINT+'/login'   
+            window.location = ENDPOINT+"/login?err='Brak decku'"
         }
 
         this.load.rexAwait('Game', {
@@ -51,7 +51,6 @@ export default class Game extends Phaser.Scene {
 
     create() {
         let self = this;
-        console.log(ENDPOINT);
         //Render button
         this.dealText = this.add.text(75, 350, ['End Round'])
             .setFontSize(18).setFontFamily('Roboto').setColor('white').setInteractive();
@@ -60,11 +59,14 @@ export default class Game extends Phaser.Scene {
         this.zone = new Board(this);
 
         //PlayerA
-        this.dropZone = this.zone.renderZone(600, 575);
-        this.outline = this.zone.renderOutline(this.dropZone, 0x69ff8a);
-
-        this.dropZone = this.zone.renderZone(600, 450);
-        this.outline = this.zone.renderOutline(this.dropZone, 0x69ff8a);
+        this.dropZone1 = this.zone.renderZone(600, 575);
+        this.outline = this.zone.renderOutline(this.dropZone1, 0x69ff8a);
+        this.dropZone1.data.set('id', '1')
+        this.dropZone1.data.set('placed', [])
+        this.dropZone2 = this.zone.renderZone(600, 450);
+        this.outline = this.zone.renderOutline(this.dropZone2, 0x69ff8a);
+        this.dropZone2.data.set('id', '2')
+        this.dropZone2.data.set('placed', [])
 
         //PlayerB prawdopodobnie nie będzie potrzebny bo będziesz dostawał eventy z serwera
         this.outline = this.zone.renderOutlineWithoutDropZone(600, 275, 0xfc3549);
@@ -80,20 +82,30 @@ export default class Game extends Phaser.Scene {
 
         let loader = new Phaser.Loader.LoaderPlugin(self)
         const cardsFromDeck = this.cache.json.get('card').body.deck.cards;
-        for (let i = 0; i < cardsFromDeck.length; i++) {
-            let name = "card" + i
-            let src = "src/assets/" + cardsFromDeck[i].image
-            let power = cardsFromDeck[i].power
-            let shield = cardsFromDeck[i].shield
-            let nameDb = cardsFromDeck[i].name
-            let describe = cardsFromDeck[i].describe
-            loader.image(name, src)
-            let playerCard = new Card(this);
-            loader.once(Phaser.Loader.Events.COMPLETE, () => {
-                playerCard.render(275 + (i * 100), 710, name, nameDb, power, shield, describe)
-            });
-        }
-        loader.start();
+
+        //sockets
+        this.socket.on('sendTable', function(data) {
+            let array;
+            console.log(data)
+            if(data.length === undefined){
+                array = data.table;
+            }
+            else{
+                array = data
+            }
+            if(array[0].length === 0 && array[1].length === 0  && array[2].length === 0  && array[3].length === 0){
+                new CardManager(loader, self, cardsFromDeck).renderIfTableIsEmpty();
+            }
+            else{
+                new CardManager(loader, self, cardsFromDeck).renderIfTableIsNotEmpty(array);
+            }
+            loader.start();
+            console.log(self.children.getByName("Example_card_2"))
+        });
+        
+        this.socket.emit("getTable");
+        
+        
 
         //End round button
         // this.dealCards = () => {
@@ -124,6 +136,7 @@ export default class Game extends Phaser.Scene {
         })
 
         this.input.on('drag', function(pointer, gameObject, dragX, dragY) {
+            //TODO Split a name on dot when server will give unique id of name
             self.nameValue.text = gameObject.name
             self.descriptionValue.text = gameObject.description
             self.powerValue.text = gameObject.power
@@ -154,35 +167,34 @@ export default class Game extends Phaser.Scene {
             gameObject.x = (dropZone.x - 350) + (dropZone.data.values.cards * 50);
             gameObject.y = dropZone.y;
             gameObject.disableInteractive();
+            let placed = dropZone.data.get('placed')
+            placed.push(gameObject.id)
+            dropZone.data.set('placed', placed)
             console.log(gameObject);
-            //tu potrzebuje id linii lub jej index ;)
-            self.socket.emit('put',gameObject);
+            let returnCard = {
+                x: gameObject.x,
+                y: gameObject.y,
+                name: gameObject.name,
+                width: gameObject.width,
+                description: gameObject.description,
+                texture: gameObject.id,
+                power: gameObject.power,
+                shield: gameObject.shield,
+                id: gameObject.id,
+                placedCards: dropZone.data.get('placed')
+            }
+            let returnData = {
+                fieldId: dropZone.data.get("id"),
+                card: returnCard,
+                cardId: gameObject.id,
+                field: {
+                    x: dropZone.x,
+                    y: dropZone.y,
+                    width: dropZone.width
+                }
+            }
+            self.socket.emit('put',returnData);
         })
-
-
-
-        this.socket.on('connect', function() {
-            console.log('Connected!');
-        });
-
-        this.socket.on('hello', function() {
-            console.log('Hello from server!');
-        });
-
-        this.socket.on('error', function(err) {
-            console.log(err);
-        });
-
-        this.socket.on('disconnected', function() {
-            console.log('disconnected');
-        });
-
-        this.socket.on('sendTable', function(data) {
-            // tu dostajesz stolik z serwera
-            console.log(data);
-        });
-
-        this.socket.emit("getTable");
 
 
     }

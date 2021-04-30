@@ -12,8 +12,13 @@ const config = {
         }]
     },
     type: Phaser.AUTO,
-    width: 1280,
-    height: 780,
+    scale: {
+        mode: Phaser.Scale.FIT,
+        parent: 'game-card',
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        width: 1280,
+        height: 780
+    },
     scene: [
         Game
     ]
