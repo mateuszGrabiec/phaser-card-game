@@ -84,23 +84,28 @@ export default class Game extends Phaser.Scene {
         const cardsFromDeck = this.cache.json.get('card').body.deck.cards;
 
         //sockets
-        this.socket.on('sendTable', function(data) {
-            let array;
-            console.log(data)
-            if(data.length === undefined){
-                array = data.table;
+        this.socket.on('sendTable', function(table) {
+            if(table?.table){
+                table = table.table
+            }
+            if(table[0].length === 0 && table[1].length === 0  && table[2].length === 0  && table[3].length === 0){
+                if(self?.cardManager){
+                    self.cardManager.renderIfTableIsEmpty();
+                }else{
+                    self.cardManager = new CardManager(loader, self, cardsFromDeck)
+                    self.cardManager.renderIfTableIsEmpty();
+                }
             }
             else{
-                array = data
-            }
-            if(array[0].length === 0 && array[1].length === 0  && array[2].length === 0  && array[3].length === 0){
-                new CardManager(loader, self, cardsFromDeck).renderIfTableIsEmpty();
-            }
-            else{
-                new CardManager(loader, self, cardsFromDeck).renderIfTableIsNotEmpty(array);
+                if(self?.cardManager){
+                    self.cardManager.renderIfTableIsNotEmpty(table);
+                }else{
+                    self.cardManager = new CardManager(loader, self, cardsFromDeck)
+                    self.cardManager.renderIfTableIsNotEmpty(table);
+                }
             }
             loader.start();
-            console.log(self.children.getByName("Example_card_2"))
+            // console.log(self.children.getByName("Example_card_2"))
         });
         
         this.socket.emit("getTable");
@@ -174,14 +179,8 @@ export default class Game extends Phaser.Scene {
             let returnCard = {
                 x: gameObject.x,
                 y: gameObject.y,
-                name: gameObject.name,
                 width: gameObject.width,
-                description: gameObject.description,
-                texture: gameObject.id,
-                power: gameObject.power,
-                shield: gameObject.shield,
-                id: gameObject.id,
-                placedCards: dropZone.data.get('placed')
+                id: gameObject.id
             }
             let returnData = {
                 fieldId: dropZone.data.get("id"),
