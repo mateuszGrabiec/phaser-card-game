@@ -1,5 +1,4 @@
 import Card from '../helpers/card';
-var _ = require('lodash');
 
 export default class CardManager {
     constructor(loader,self,cardsFromDeck,deckId,outlineEnemy1,outlineEnemy2, allCards, alreadyEnemyRendered,dropZone1, dropZone2){

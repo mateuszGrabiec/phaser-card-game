@@ -3,6 +3,7 @@ import io from 'socket.io-client';
 import Board from '../helpers/board';
 import propBox from "../helpers/propBox";
 import CardManager from '../helpers/cardManager';
+var _ = require('lodash');
 
 export default class Game extends Phaser.Scene {
     constructor() {
@@ -12,7 +13,18 @@ export default class Game extends Phaser.Scene {
     }
 
     preload() {
-        //tutaj można włączyć loader
+        //LOADER
+        this.graphics = this.add.graphics();
+		this.newGraphics = this.add.graphics();
+		var progressBar = new Phaser.Geom.Rectangle(300*1.5, 200*1.5, 400, 50);
+		var progressBarFill = new Phaser.Geom.Rectangle(305*1.5, 205*1.5, 290, 40);
+		this.graphics.fillStyle(0xffffff, 1);
+		this.graphics.fillRectShape(progressBar);
+		this.newGraphics.fillStyle(0x3587e2, 1);
+		this.newGraphics.fillRectShape(progressBarFill);
+		this.loadingText = this.add.text(350*1.5,260*1.5,"Loading: ", { fontSize: '32px', fill: '#FFF' });
+        
+        //ASSETS
         this.load.json('card', ENDPOINT + '/decks/current', null, { withCredentials: true })
             this.socket = io(ENDPOINT, {
                 withCredentials: true
@@ -48,7 +60,31 @@ export default class Game extends Phaser.Scene {
             // scope: scope
         });
 
+        this.load.on('progress', this.updateBar, {newGraphics:this.newGraphics,loadingText:this.loadingText});
+        this.load.on('complete', this.complete, {scene:this.scene, newGraphics:this.newGraphics,loadingText:this.loadingText, graphics: this.graphics});
     }
+
+    updateBar(percentage) {
+		this.newGraphics.clear();
+        this.newGraphics.fillStyle(0x3587e2, 1);
+        this.newGraphics.fillRectShape(new Phaser.Geom.Rectangle(305*1.5, 205*1.5, percentage*390, 40));
+        percentage = percentage * 100;
+        this.loadingText.setText("Loading: " + percentage.toFixed(2) + "%");
+        const date = Date.now();
+        let currentDate = null;
+        do {
+          currentDate = Date.now();
+        } while (currentDate - date < 1800);
+	}
+
+
+
+	complete() {
+        this.newGraphics.setVisible(false)
+        this.loadingText.visible = false
+        this.graphics.visible = false
+        console.log("COMPLETE!");
+	}
 
     create() {
         let self = this;
