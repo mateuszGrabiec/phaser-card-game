@@ -16,7 +16,7 @@ export default class Board {
             let yCalc =  y - 120 / 2
             dropZoneOutline.lineStyle(4, color);
             dropZoneOutline.strokeRect(x - 800 / 2, yCalc, 800, 120)
-            return yCalc
+            return yCalc + 60
         }
     }
 }

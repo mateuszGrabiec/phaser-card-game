@@ -12,6 +12,7 @@ export default class CardManager {
         this.alreadyEnemyRendered = alreadyEnemyRendered
         this.dropZone1 = dropZone1
         this.dropZone2 = dropZone2
+        this.deckLength = 4
     }
     renderIfTableIsEmpty(){
         let handLength = 0
@@ -32,6 +33,8 @@ export default class CardManager {
             let id = card._id
             let x = card.x || 275 + (element * 100)
             let y = card.y || 710
+            console.log("HAND X:", x);
+            console.log("HAND Y:", y);
             this.loader.image(imgName, src)
             let playerCard = new Card(this.self);
             this.loader.once(Phaser.Loader.Events.COMPLETE, () => {
@@ -39,7 +42,20 @@ export default class CardManager {
             });
             this.loader.start()
     }
+    renderBackCards(){
+        for(let i = 0; i <= this.deckLength; i++){
+            let src = "src/assets/cardback.png"
+            let name = "cardback"+i
+            this.loader.image(name, src);
+            this.loader.once(Phaser.Loader.Events.COMPLETE, () => {
+                this.self.add.image(275 + (i * 100), 40, name).setScale(0.1, 0.1).setName(name)
+            });
+            this.loader.start();
+
+        }
+    }
     moveCard(card, cardObject, index){
+        console.log(index);
         if(card.deckId === this.deckId){
             this.checkAndApplyPosition(cardObject, card, index)
             cardObject.disableInteractive();
@@ -62,6 +78,14 @@ export default class CardManager {
                     })
                 }
             }
+            if(index == 2 || index == 3){
+                const max = this.deckLength
+                const min = 0
+                let random = Math.floor(Math.random() * (+max + 1 - +min)) + +min;
+                let backName = "cardback"+random
+                let backObject = this.self.children.getByName(backName)
+                backObject.visible = false
+            }
         }
         //this.loader.start();
     }
@@ -69,14 +93,13 @@ export default class CardManager {
         objectToMove.x = card.x
 
         if(index === 2){
-            objectToMove.y  = this.outlineEnemy1 + 60
+            objectToMove.y  = this.outlineEnemy1
         }
-        if(index === 3){
-            objectToMove.y  = this.outlineEnemy2 + 60
+        else if(index === 3){
+            objectToMove.y  = this.outlineEnemy2
         }
         else {
             objectToMove.y = card.y
         }
-
     }
 }

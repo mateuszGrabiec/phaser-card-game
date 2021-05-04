@@ -117,12 +117,15 @@ export default class Game extends Phaser.Scene {
         
         let outlineEnemy1 = this.outline1
         let outlineEnemy2 = this.outline2
+        console.log("1:", outlineEnemy1);
+        console.log("2:", outlineEnemy2);
         let loader = new Phaser.Loader.LoaderPlugin(self)
         const cardsFromDeck = this.cache.json.get('card').body.deck.cards;
         self.deckId = this.cache.json.get('card').body.deck._id;
         const allCards = this.cache.json.get('allcards').body;
         self.cardManager = new CardManager(loader, self, cardsFromDeck,self.deckId,outlineEnemy1,outlineEnemy2,allCards, [], this.dropZone1, this.dropZone2)
         self.cardManager.renderIfTableIsEmpty();
+        self.cardManager.renderBackCards();
         //sockets
         this.socket.on('sendTable', function(table) {
             console.log(table);
@@ -136,6 +139,7 @@ export default class Game extends Phaser.Scene {
                         line.map((card) => {
                             let allDeckArr = self.children.getAll('deck_id', self.deckId)
                             let cardObject = allDeckArr.filter(elem => elem.name === card.name)
+                            console.log(cardObject);
                             self.cardManager.moveCard(card, cardObject[0], index);
                         })
                     })
