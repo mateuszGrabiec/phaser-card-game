@@ -1,94 +1,83 @@
 import Card from '../helpers/card';
+var _ = require('lodash');
 
 export default class CardManager {
-    constructor(loader,self,cardsFromDeck){
+    constructor(loader,self,cardsFromDeck,deckId,outlineEnemy1,outlineEnemy2, allCards, alreadyEnemyRendered,dropZone1, dropZone2){
         this.loader = loader
         this.self = self
         this.cardsFromDeck = cardsFromDeck
+        this.deckId = deckId
+        this.outlineEnemy1 = outlineEnemy1
+        this.outlineEnemy2 = outlineEnemy2
+        this.allCards = allCards
+        this.alreadyEnemyRendered = alreadyEnemyRendered
+        this.dropZone1 = dropZone1
+        this.dropZone2 = dropZone2
     }
     renderIfTableIsEmpty(){
-        console.log(this.cardsFromDeck)
-        //use function renderCard
-        for (let i = 0; i < this.cardsFromDeck.length; i++) {
-            this.renderCard();
-            // const imgName = this.cardsFromDeck[i].image.split('.')[0]
-            // let name = imgName;// "card" + this.cardsFromDeck[i]._id
-            // let src = "src/assets/" + this.cardsFromDeck[i].image
-            // let power = this.cardsFromDeck[i].power
-            // let shield = this.cardsFromDeck[i].shield
-            // let nameDb = this.cardsFromDeck[i].name
-            // let describe = this.cardsFromDeck[i].describe
-            // let id = this.cardsFromDeck[i]._id
-            // this.loader.image(imgName, src)
-            // let playerCard = new Card(this.self);
-            // this.loader.once(Phaser.Loader.Events.COMPLETE, () => {
-            //     playerCard.render(275 + (i * 100), 710, name, nameDb, power, shield, describe,id)
-            // });
+        let handLength = 0
+        for (let card of this.cardsFromDeck) {
+            this.renderCard(card,handLength);
+            handLength++
         }
         
     }
-    renderIfTableIsNotEmpty(table){
-        console.log('TABLE: ',table);
-        let placedCards = [];
-        table.map((line) => {
-            line.map((card)=>{
-                // console.log('cardFromDb',card);
-                this.moveCard();
-                placedCards.push(card);
-            })
-        });
-        let hand = [];
-        if(placedCards?.length > 0){
-            // this.cardsFromDeck.map(card=>{
-            //     console.log(card._id);
-            //    const isIn = placedCards.filter(x=>x._id==card._id).pop();
-            //    console.log('isIN',isIn);
-            //    if(isIn===undefined){
-            //        hand.push(card);
-            //    }
-            // })
-            hand = this.cardsFromDeck.filter(card=>{
-                const isOnHand = placedCards.filter(x=>x._id==card._id).length > 0 ? false : true;
-                return isOnHand
+    renderCard(card, element = 0, alreadyPlaced = null){
+            const imgName = card.image.split('.')[0]
+            let name = imgName;
+            let src = "src/assets/" + card.image
+            let power = card.power
+            let shield = card.shield
+            let nameDb = card.name
+            let describe = card.describe
+            let id = card._id
+            let x = card.x || 275 + (element * 100)
+            let y = card.y || 710
+            this.loader.image(imgName, src)
+            let playerCard = new Card(this.self);
+            this.loader.once(Phaser.Loader.Events.COMPLETE, () => {
+                playerCard.render(x, y, name, nameDb, power, shield, describe,id,this.deckId, alreadyPlaced)
             });
+            this.loader.start()
+    }
+    moveCard(card, cardObject, index){
+        if(card.deckId === this.deckId){
+            this.checkAndApplyPosition(cardObject, card, index)
+            cardObject.disableInteractive();
+        }
+        else{
+            let filtered = this.allCards.filter(elem => elem._id === card._id)
+            this.checkAndApplyPosition(filtered[0], card, index)
+            if(this.alreadyEnemyRendered.length === 0){
+                this.renderCard(filtered[0],0,true)
+                this.alreadyEnemyRendered.push({
+                    id: filtered[0]._id
+                })
+            }
+            else{
+                let findIfRendered = this.alreadyEnemyRendered.filter(elem => elem.id === filtered[0]._id)
+                if (findIfRendered.length === 0){
+                    this.renderCard(filtered[0],0,true)
+                    this.alreadyEnemyRendered.push({
+                        id: filtered[0]._id
+                    })
+                }
+            }
+        }
+        //this.loader.start();
+    }
+    checkAndApplyPosition(objectToMove, card, index){
+        objectToMove.x = card.x
+
+        if(index === 2){
+            objectToMove.y  = this.outlineEnemy1 + 60
+        }
+        if(index === 3){
+            objectToMove.y  = this.outlineEnemy2 + 60
+        }
+        else {
+            objectToMove.y = card.y
         }
 
-        // for (let i = 0; i < hand?.length; i++) {
-        //     const imgName = this.cardsFromDeck[i].image.split('.')[0]
-        //     let name = imgName
-        //     let src = "src/assets/" + hand[i].image
-        //     let power = hand[i].power
-        //     let shield = hand[i].shield
-        //     let nameDb = hand[i].name
-        //     let describe = hand[i].describe
-        //     let id = hand[i]._id
-        //     this.loader.image(imgName, src)
-        //     let playerCard = new Card(this.self);
-        //     this.loader.once(Phaser.Loader.Events.COMPLETE, () => {
-        //         playerCard.render(275 + (i * 100), 710, name, nameDb, power, shield, describe,id)
-        //     });
-        // }
-    }
-    renderCard(card){
-        
-    }
-    moveCard(card){
-        // if (card === y.id){
-        //     console.log('imageOfCard',y);
-        //     const imgName = y.image.split('.')[0]
-        //     let name = imgName //"card" + y.id
-        //     let src = "src/assets/" + y.id + ".png"
-        //     let power = y.power
-        //     let shield = y.shield
-        //     let nameDb = y.name
-        //     let describe = y.description
-        //     let id = y.id
-        //     placedCards.push(id)
-        //     this.loader.image(imgName, src)
-        //     let playerCard = new Card(this.self);
-        //     this.loader.once(Phaser.Loader.Events.COMPLETE, () => {
-        //         playerCard.render(y.x, y.y, name, nameDb, power, shield, describe,id, true)
-        //     });      
-        // }
     }
 }

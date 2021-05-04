@@ -35,6 +35,7 @@
   },
   "dependencies": {
     "axios": "^0.21.1",
+    "lodash": "^4.17.21",
     "phaser": "^3.50.0",
     "phaser3-rex-plugins": "^1.1.46",
     "socket.io-client": "^4.0.0"

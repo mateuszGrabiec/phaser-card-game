@@ -10,10 +10,13 @@ export default class Board {
             dropZoneOutline.lineStyle(4, color);
             dropZoneOutline.strokeRect(dropZone.x - dropZone.input.hitArea.width / 2, dropZone.y - dropZone.input.hitArea.height / 2, dropZone.input.hitArea.width, dropZone.input.hitArea.height)
         }
-        this.renderOutlineWithoutDropZone = (x,y,color) => {
+        this.renderOutlineWithoutDropZone = (x,y,color, name) => {
             let dropZoneOutline = scene.add.graphics();
+            dropZoneOutline.name = name
+            let yCalc =  y - 120 / 2
             dropZoneOutline.lineStyle(4, color);
-            dropZoneOutline.strokeRect(x - 800 / 2, y - 120 / 2, 800, 120)
+            dropZoneOutline.strokeRect(x - 800 / 2, yCalc, 800, 120)
+            return yCalc
         }
     }
 }
