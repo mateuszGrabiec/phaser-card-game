@@ -30,6 +30,12 @@ export default class Game extends Phaser.Scene {
                 withCredentials: true
             });
         this.load.json('allcards', ENDPOINT + '/card', null, { withCredentials: true })
+
+
+        let self = this
+        let loader = new Phaser.Loader.LoaderPlugin(self)
+        this.add.text(500, 40, "Waiting for opponent ....").setName('opponent')
+
         var callback = function(successCallback, failureCallback) {
             fetch(ENDPOINT + '/decks/current', {
                 credentials: 'include'
@@ -37,8 +43,14 @@ export default class Game extends Phaser.Scene {
                 if (res.redirected) {
                     failureCallback();
                 } else {
-                    //tu trzeba jescze obsłużyć pusty deck
-                    successCallback();
+                    res.json().then(res => {
+                        if (res.body.deck === false){
+                            failureCallback();
+                        }
+                        else{
+                            successCallback(self, loader);
+                        }
+                    })
                 }
             }).catch(err => {
                 console.log('err', err);
@@ -46,14 +58,31 @@ export default class Game extends Phaser.Scene {
             })
         };
 
-        var successCallback = () => {
-            //tutaj można wyłączyć loader
-            console.log('success with getting deck!!!');
+        function successCallback(self, loader) {
+            //WAITING FOR SECOND PLAYER
+            self.socket.on('sendPlayer', function (len) {
+                let oponentText = self.children.getByName('opponent')
+                oponentText.visible = false
+                if (len) {
+                    for(let i = 0; i < len; i++){
+                        let src = "src/assets/cardback.png"
+                        let name = "cardback"+i
+                        loader.image(name, src);
+                        loader.once(Phaser.Loader.Events.COMPLETE, () => {
+                            self.add.image(275 + (i * 100), 40, name).setScale(0.1, 0.1).setName(name)
+                        });
+                        loader.start();
+                    }
+                }
+            })
+            
         }
 
         var failureCallback = function () {
+
             window.location = ENDPOINT+"/login?err='Brak decku'"
         }
+
 
         this.load.rexAwait('Game', {
             callback: callback(successCallback,failureCallback),
@@ -83,7 +112,6 @@ export default class Game extends Phaser.Scene {
         this.newGraphics.setVisible(false)
         this.loadingText.visible = false
         this.graphics.visible = false
-        console.log("COMPLETE!");
 	}
 
     create() {
@@ -114,7 +142,7 @@ export default class Game extends Phaser.Scene {
         this.box = new propBox(this);
         this.box.render();
 
-        
+        //MAPPING
         let outlineEnemy1 = this.outline1
         let outlineEnemy2 = this.outline2
         console.log("1:", outlineEnemy1);
@@ -125,7 +153,7 @@ export default class Game extends Phaser.Scene {
         const allCards = this.cache.json.get('allcards').body;
         self.cardManager = new CardManager(loader, self, cardsFromDeck,self.deckId,outlineEnemy1,outlineEnemy2,allCards, [], this.dropZone1, this.dropZone2)
         self.cardManager.renderIfTableIsEmpty();
-        self.cardManager.renderBackCards();
+
         //sockets
         this.socket.on('sendTable', function(table) {
             console.log(table);
@@ -153,9 +181,9 @@ export default class Game extends Phaser.Scene {
         
 
         //End round button
-        // this.dealCards = () => {
-
-        // }
+        this.dealCards = () => {
+            console.log("Turn shifted!!");
+        }
 
         //Render a text in prop-box
         this.nameText = this.add.text(1040, 250, ['Name:'])

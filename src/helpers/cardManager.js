@@ -42,18 +42,7 @@ export default class CardManager {
             });
             this.loader.start()
     }
-    renderBackCards(){
-        for(let i = 0; i <= this.deckLength; i++){
-            let src = "src/assets/cardback.png"
-            let name = "cardback"+i
-            this.loader.image(name, src);
-            this.loader.once(Phaser.Loader.Events.COMPLETE, () => {
-                this.self.add.image(275 + (i * 100), 40, name).setScale(0.1, 0.1).setName(name)
-            });
-            this.loader.start();
-
-        }
-    }
+    
     moveCard(card, cardObject, index){
         console.log(index);
         if(card.deckId === this.deckId){
