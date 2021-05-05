@@ -3,6 +3,7 @@ import io from 'socket.io-client';
 import Board from '../helpers/board';
 import propBox from "../helpers/propBox";
 import CardManager from '../helpers/cardManager';
+var _ = require('lodash');
 
 export default class Game extends Phaser.Scene {
     constructor() {
@@ -12,12 +13,29 @@ export default class Game extends Phaser.Scene {
     }
 
     preload() {
-        //tutaj można włączyć loader
+        //LOADER
+        this.graphics = this.add.graphics();
+		this.newGraphics = this.add.graphics();
+		var progressBar = new Phaser.Geom.Rectangle(300*1.5, 200*1.5, 400, 50);
+		var progressBarFill = new Phaser.Geom.Rectangle(305*1.5, 205*1.5, 290, 40);
+		this.graphics.fillStyle(0xffffff, 1);
+		this.graphics.fillRectShape(progressBar);
+		this.newGraphics.fillStyle(0x3587e2, 1);
+		this.newGraphics.fillRectShape(progressBarFill);
+		this.loadingText = this.add.text(350*1.5,260*1.5,"Loading: ", { fontSize: '32px', fill: '#FFF' });
+        
+        //ASSETS
         this.load.json('card', ENDPOINT + '/decks/current', null, { withCredentials: true })
             this.socket = io(ENDPOINT, {
                 withCredentials: true
             });
         this.load.json('allcards', ENDPOINT + '/card', null, { withCredentials: true })
+
+
+        let self = this
+        let loader = new Phaser.Loader.LoaderPlugin(self)
+        this.add.text(500, 40, "Waiting for opponent ....").setName('opponent')
+
         var callback = function(successCallback, failureCallback) {
             fetch(ENDPOINT + '/decks/current', {
                 credentials: 'include'
@@ -25,8 +43,14 @@ export default class Game extends Phaser.Scene {
                 if (res.redirected) {
                     failureCallback();
                 } else {
-                    //tu trzeba jescze obsłużyć pusty deck
-                    successCallback();
+                    res.json().then(res => {
+                        if (res.body.deck === false){
+                            failureCallback();
+                        }
+                        else{
+                            successCallback(self, loader);
+                        }
+                    })
                 }
             }).catch(err => {
                 console.log('err', err);
@@ -34,21 +58,61 @@ export default class Game extends Phaser.Scene {
             })
         };
 
-        var successCallback = () => {
-            //tutaj można wyłączyć loader
-            console.log('success with getting deck!!!');
+        function successCallback(self, loader) {
+            //WAITING FOR SECOND PLAYER
+            self.socket.on('sendPlayer', function (len) {
+                let oponentText = self.children.getByName('opponent')
+                oponentText.visible = false
+                if (len) {
+                    for(let i = 0; i < len; i++){
+                        let src = "src/assets/cardback.png"
+                        let name = "cardback"+i
+                        loader.image(name, src);
+                        loader.once(Phaser.Loader.Events.COMPLETE, () => {
+                            self.add.image(275 + (i * 100), 40, name).setScale(0.1, 0.1).setName(name)
+                        });
+                        loader.start();
+                    }
+                }
+            })
+            
         }
 
         var failureCallback = function () {
+
             window.location = ENDPOINT+"/login?err='Brak decku'"
         }
+
 
         this.load.rexAwait('Game', {
             callback: callback(successCallback,failureCallback),
             // scope: scope
         });
 
+        this.load.on('progress', this.updateBar, {newGraphics:this.newGraphics,loadingText:this.loadingText});
+        this.load.on('complete', this.complete, {scene:this.scene, newGraphics:this.newGraphics,loadingText:this.loadingText, graphics: this.graphics});
     }
+
+    updateBar(percentage) {
+		this.newGraphics.clear();
+        this.newGraphics.fillStyle(0x3587e2, 1);
+        this.newGraphics.fillRectShape(new Phaser.Geom.Rectangle(305*1.5, 205*1.5, percentage*390, 40));
+        percentage = percentage * 100;
+        this.loadingText.setText("Loading: " + percentage.toFixed(2) + "%");
+        const date = Date.now();
+        let currentDate = null;
+        do {
+          currentDate = Date.now();
+        } while (currentDate - date < 1800);
+	}
+
+
+
+	complete() {
+        this.newGraphics.setVisible(false)
+        this.loadingText.visible = false
+        this.graphics.visible = false
+	}
 
     create() {
         let self = this;
@@ -78,15 +142,18 @@ export default class Game extends Phaser.Scene {
         this.box = new propBox(this);
         this.box.render();
 
-        
+        //MAPPING
         let outlineEnemy1 = this.outline1
         let outlineEnemy2 = this.outline2
+        console.log("1:", outlineEnemy1);
+        console.log("2:", outlineEnemy2);
         let loader = new Phaser.Loader.LoaderPlugin(self)
         const cardsFromDeck = this.cache.json.get('card').body.deck.cards;
         self.deckId = this.cache.json.get('card').body.deck._id;
         const allCards = this.cache.json.get('allcards').body;
         self.cardManager = new CardManager(loader, self, cardsFromDeck,self.deckId,outlineEnemy1,outlineEnemy2,allCards, [], this.dropZone1, this.dropZone2)
         self.cardManager.renderIfTableIsEmpty();
+
         //sockets
         this.socket.on('sendTable', function(table) {
             console.log(table);
@@ -100,6 +167,7 @@ export default class Game extends Phaser.Scene {
                         line.map((card) => {
                             let allDeckArr = self.children.getAll('deck_id', self.deckId)
                             let cardObject = allDeckArr.filter(elem => elem.name === card.name)
+                            console.log(cardObject);
                             self.cardManager.moveCard(card, cardObject[0], index);
                         })
                     })
@@ -113,9 +181,9 @@ export default class Game extends Phaser.Scene {
         
 
         //End round button
-        // this.dealCards = () => {
-
-        // }
+        this.dealCards = () => {
+            console.log("Turn shifted!!");
+        }
 
         //Render a text in prop-box
         this.nameText = this.add.text(1040, 250, ['Name:'])
