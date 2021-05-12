@@ -80,7 +80,7 @@ export default class Game extends Phaser.Scene {
 
         var failureCallback = function () {
 
-            window.location = ENDPOINT+"/login?err='Brak decku'"
+            window.location = ENDPOINT+"/decks"
         }
 
 
