@@ -6,7 +6,8 @@
     },
     "extends": "eslint:recommended",
     "parserOptions": {
-        "ecmaVersion": 2021
+        "ecmaVersion": 2021,
+        "sourceType": "module"
     },
     "rules": {
         "indent": [
@@ -25,5 +26,11 @@
             "error",
             "always"
         ]
+    },
+    "globals": {
+        "Phaser":true,
+        "ENDPOINT":true,
+        "fetch":true,
+        "window":true
     }
 }
