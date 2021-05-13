@@ -47,7 +47,7 @@ export default class CardManager {
         console.log(index);
         if(card.deckId === this.deckId){
             this.checkAndApplyPosition(cardObject, card, index)
-            cardObject.disableInteractive();
+            this.self.input.setDraggable(cardObject, false)
         }
         else{
             let filtered = this.allCards.filter(elem => elem._id === card._id)

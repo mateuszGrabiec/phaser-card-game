@@ -80,7 +80,7 @@ export default class Game extends Phaser.Scene {
 
         var failureCallback = function () {
 
-            window.location = ENDPOINT+"/login?err='Brak decku'"
+            window.location = ENDPOINT+"/decks"
         }
 
 
@@ -217,6 +217,15 @@ export default class Game extends Phaser.Scene {
             gameObject.y = dragY;
         });
 
+        this.input.on('gameobjectdown', function (pointer, gameObject){
+            if(gameObject.name !== ""){
+                self.nameValue.text = gameObject.name
+                self.descriptionValue.text = gameObject.description
+                self.powerValue.text = gameObject.power
+                self.shieldValue.text = gameObject.shield
+            }
+        })
+
         this.input.on('dragstart', function(pointer, gameObject) {
             gameObject.setTint(0xff69b4);
             self.children.bringToTop(gameObject);
@@ -233,10 +242,8 @@ export default class Game extends Phaser.Scene {
                 gameObject.y = gameObject.input.dragStartY;
             }
         })
-
         this.input.on('drop', function(pointer, gameObject, dropZone) {
             dropZone.data.values.cards++;
-            gameObject.disableInteractive();
             let placed = dropZone.data.get('placed')
             placed.push(gameObject.id)
             dropZone.data.set('placed', placed)
@@ -259,6 +266,7 @@ export default class Game extends Phaser.Scene {
                 }
             }
             self.socket.emit('put',returnData);
+            self.input.setDraggable(gameObject, false)
         })
 
 
