@@ -60,11 +60,12 @@ export default class Game extends Phaser.Scene {
 		function successCallback(self, loader) {
 			//WAITING FOR SECOND PLAYER
 			self.socket.on('sendPlayer', (data)=> {
-				const {deckLength} = data;
+				//oppnentHandLength
+				const {oppnentHandLength} = data;
 				let oponentText = self.children.getByName('opponent');
 				oponentText.visible = false;
-				if (deckLength) {
-					for(let i = 0; i < deckLength; i++){
+				if (oppnentHandLength) {
+					for(let i = 0; i < oppnentHandLength; i++){
 						let src = 'src/assets/cardback.png';
 						let name = 'cardback'+i;
 						loader.image(name, src);
@@ -89,8 +90,8 @@ export default class Game extends Phaser.Scene {
 			// scope: scope
 		});
 
-		this.load.on('progress', this.updateBar, {newGraphics:this.newGraphics,loadingText:this.loadingText});
-		this.load.on('complete', this.complete, {scene:this.scene, newGraphics:this.newGraphics,loadingText:this.loadingText, graphics: this.graphics});
+		// this.load.on('progress', this.updateBar, {newGraphics:this.newGraphics,loadingText:this.loadingText});
+		// this.load.on('complete', this.complete, {scene:this.scene, newGraphics:this.newGraphics,loadingText:this.loadingText, graphics: this.graphics});
 	}
 
 	updateBar(percentage) {
@@ -154,16 +155,23 @@ export default class Game extends Phaser.Scene {
 		self.cardManager = new CardManager(loader, self, cardsFromDeck,self.deckId,outlineEnemy1,outlineEnemy2,allCards, [], this.dropZone1, this.dropZone2);
 		self.cardManager.renderIfTableIsEmpty();
 
-		this.socket.on('disconnect',function () {
+		this.socket.on('error',(error)=>{
+			alert(error?.message);
+		});
+
+		this.socket.on('disconnect',()=>{
 			alert('You were disconnected from server please refresh page');   
 		});
 
-		this.socket.on('secondPlayerDisconnected',function () {
+		this.socket.on('secondPlayerDisconnected',()=>{
 			alert('secondPlayerDisconnected');   
 		});
 
 		//sockets
-		this.socket.on('sendTable', function(table) {
+		this.socket.on('sendTable', function(data) {
+			console.log('data',data);
+			//TODO sand handFrom server
+			let {table,myHand} = data;
 			console.log(table);
 			if(table?.table){
 				table = table.table;
