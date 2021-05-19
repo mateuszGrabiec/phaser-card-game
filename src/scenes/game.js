@@ -179,6 +179,8 @@ export default class Game extends Phaser.Scene {
 		self.clock = this.plugins.get('rexClock').add(this, {
 			timeScale: 1
 		});
+
+
 		self.clock.start();
 		this.add.text(1100, 200, '').setName('timer');
 
@@ -217,11 +219,16 @@ export default class Game extends Phaser.Scene {
 			alert(error?.message);
 		});
 
-		this.socket.on('disconnect',function () {
+		this.socket.on('disconnect',()=> {
 			let confirm = confirm('You were disconnected from server');
 			if(confirm == true){
 				window.location.reload();
 			}   
+		});
+
+		this.socket.on('roundSkipped',()=>{
+			alert('round skipped');
+			//TODO put random card
 		});
 
 		this.socket.on('secondPlayerDisconnected',function () {
@@ -288,7 +295,6 @@ export default class Game extends Phaser.Scene {
 						});
 					});
 				}else{
-					console.log('isEmpty');
 					self.cardManager.renderIfTableIsEmpty(myHand);
 				}
 			});
