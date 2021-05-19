@@ -53,9 +53,21 @@ export default class Game extends Phaser.Scene {
 			
 			//WAITING FOR SECOND PLAYER
 			self.socket.on('sendPlayer', (data)=> {
-				const {deckLength} = data;
+				//oppnentHandLength
+				const {oppnentHandLength} = data;
 				let oponentText = self.children.getByName('opponent');
 				oponentText.visible = false;
+				if (oppnentHandLength) {
+					for(let i = 0; i < oppnentHandLength; i++){
+						let src = 'src/assets/cardback.png';
+						let name = 'cardback'+i;
+						loader.image(name, src);
+						loader.once(Phaser.Loader.Events.COMPLETE, () => {
+							self.add.image(275 + (i * 100), 40, name).setScale(0.1, 0.1).setName(name);
+						});
+						loader.start();
+					}
+				}
 				self.deckLength = deckLength;
 			});
             
@@ -200,6 +212,11 @@ export default class Game extends Phaser.Scene {
 		self.cardManager.renderIfTableIsEmpty();
 		
 
+
+		this.socket.on('error',(error)=>{
+			alert(error?.message);
+		});
+
 		this.socket.on('disconnect',function () {
 			let confirm = confirm('You were disconnected from server');
 			if(confirm == true){
@@ -237,7 +254,11 @@ export default class Game extends Phaser.Scene {
 
 		//sockets
 
-		this.socket.on('sendTable', function(table) {
+		this.socket.on('sendTable', function(data) {
+			console.log('data',data);
+			//TODO sand handFrom server
+			let {table,myHand} = data;
+			console.log(table);
 			if(table?.table){
 				table = table.table;
 			}
