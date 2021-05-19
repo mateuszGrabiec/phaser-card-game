@@ -68,7 +68,7 @@ export default class Game extends Phaser.Scene {
 						loader.start();
 					}
 				}
-				self.deckLength = deckLength;
+				self.deckLength = oppnentHandLength;
 			});
             
 		}
