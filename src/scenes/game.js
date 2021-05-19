@@ -57,17 +57,17 @@ export default class Game extends Phaser.Scene {
 				const {oppnentHandLength} = data;
 				let oponentText = self.children.getByName('opponent');
 				oponentText.visible = false;
-				if (oppnentHandLength) {
-					for(let i = 0; i < oppnentHandLength; i++){
-						let src = 'src/assets/cardback.png';
-						let name = 'cardback'+i;
-						loader.image(name, src);
-						loader.once(Phaser.Loader.Events.COMPLETE, () => {
-							self.add.image(275 + (i * 100), 40, name).setScale(0.1, 0.1).setName(name);
-						});
-						loader.start();
-					}
-				}
+				// if (oppnentHandLength) {
+				// 	for(let i = 0; i < oppnentHandLength; i++){
+				// 		let src = 'src/assets/cardback.png';
+				// 		let name = 'cardback'+i;
+				// 		loader.image(name, src);
+				// 		loader.once(Phaser.Loader.Events.COMPLETE, () => {
+				// 			self.add.image(275 + (i * 100), 40, name).setScale(0.1, 0.1).setName(name);
+				// 		});
+				// 		loader.start();
+				// 	}
+				// }
 				self.deckLength = oppnentHandLength;
 			});
             
@@ -209,7 +209,7 @@ export default class Game extends Phaser.Scene {
 		self.deckId = this.cache.json.get('card').body.deck._id;
 		const allCards = this.cache.json.get('allcards').body;
 		self.cardManager = new CardManager(loader, self, cardsFromDeck,self.deckId,outlineEnemy1,outlineEnemy2,allCards, [], this.dropZone1, this.dropZone2);
-		self.cardManager.renderIfTableIsEmpty();
+		// self.cardManager.renderIfTableIsEmpty();
 		
 
 
@@ -258,10 +258,10 @@ export default class Game extends Phaser.Scene {
 			console.log('data',data);
 			//TODO sand handFrom server
 			let {table,myHand} = data;
-			console.log(table);
 			if(table?.table){
 				table = table.table;
 			}
+			self.cardManager.renderIfTableIsEmpty(myHand);
 			self.table = table;
 			loader.once(Phaser.Loader.Events.COMPLETE, () => {
 				if(table[0].length !== 0 || table[1].length !== 0  || table[2].length !== 0  || table[3].length !== 0){
@@ -269,7 +269,7 @@ export default class Game extends Phaser.Scene {
 						line.map((card) => {
 							let allDeckArr = self.children.getAll('deck_id', self.deckId);
 							let cardObject = allDeckArr.filter(elem => elem.name === card.name);
-							self.cardManager.moveCard(card, cardObject[0], index);
+							self.cardManager.moveCard(card, cardObject[0], index, myHand);
 							if(index == 2 || index == 3){
 								const checkLenOfTable = table[2].length + table[3].length;
 								if(checkLenOfTable !== self.alreadyMapped.length){
@@ -287,6 +287,9 @@ export default class Game extends Phaser.Scene {
 							}
 						});
 					});
+				}else{
+					console.log('isEmpty');
+					self.cardManager.renderIfTableIsEmpty(myHand);
 				}
 			});
 			loader.start();
