@@ -13,9 +13,11 @@ export default class CardManager {
         this.dropZone1 = dropZone1;
         this.dropZone2 = dropZone2;
     }
-    renderIfTableIsEmpty(){
+    renderIfTableIsEmpty(myHand){
+		// myHand = myHand || this.cardsFromDeck;
         let handLength = 0;
-        for (let card of this.cardsFromDeck) {
+        for (let card of myHand) {
+			console.log(card);
             this.renderCard(card,handLength);
             handLength++;
         }
@@ -40,7 +42,11 @@ export default class CardManager {
             this.loader.start();
     }
     
-    moveCard(card, cardObject, index){
+    moveCard(card, cardObject, index,myHand){
+		if(_.isEmpty(cardObject)){
+			//TODO impl render if it's 1st time
+			cardObject = this.renderCard(card);
+		}
         if(card.deckId === this.deckId){
             this.checkAndApplyPosition(cardObject, card, index);
             this.self.input.setDraggable(cardObject, false);
@@ -66,16 +72,15 @@ export default class CardManager {
         }
     }
     checkAndApplyPosition(objectToMove, card, index){
-        objectToMove.x = card.x;
-
-        if(index === 2){
-            objectToMove.y  = this.outlineEnemy1;
-        }
-        else if(index === 3){
-            objectToMove.y  = this.outlineEnemy2;
-        }
-        else {
-            objectToMove.y = card.y;
-        }
+		objectToMove.x = card.x;
+		if(index === 2){
+			objectToMove.y  = this.outlineEnemy1;
+		}
+		else if(index === 3){
+			objectToMove.y  = this.outlineEnemy2;
+		}
+		else {
+			objectToMove.y = card.y;
+		}
     }
 }
