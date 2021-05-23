@@ -2,9 +2,11 @@ import io from 'socket.io-client';
 import Board from '../helpers/board';
 import propBox from '../helpers/propBox';
 import CardManager from '../helpers/cardManager';
+import ShowScore from '../helpers/showScore';
+import SkillManager from '../helpers/skillManager';
 
 var _ = require('lodash');
-
+// TODO - czasami wywala mapping
 export default class Game extends Phaser.Scene {
 	constructor() {
 		super({
@@ -26,6 +28,10 @@ export default class Game extends Phaser.Scene {
 
 		let self = this;
 		this.add.text(500, 40, 'Waiting for opponent ....').setName('opponent');
+		this.add.text(100, 580, 'power1').setName('power1');
+		this.add.text(100, 450, 'power2').setName('power2');
+		this.add.text(100, 280, 'power3').setName('power3');
+		this.add.text(100, 130, 'power4').setName('power4');
 
 		var callback = function(successCallback, failureCallback) {
 			fetch(ENDPOINT + '/decks/current', {
@@ -57,17 +63,6 @@ export default class Game extends Phaser.Scene {
 				const {oppnentHandLength} = data;
 				let oponentText = self.children.getByName('opponent');
 				oponentText.visible = false;
-				// if (oppnentHandLength) {
-				// 	for(let i = 0; i < oppnentHandLength; i++){
-				// 		let src = 'src/assets/cardback.png';
-				// 		let name = 'cardback'+i;
-				// 		loader.image(name, src);
-				// 		loader.once(Phaser.Loader.Events.COMPLETE, () => {
-				// 			self.add.image(275 + (i * 100), 40, name).setScale(0.1, 0.1).setName(name);
-				// 		});
-				// 		loader.start();
-				// 	}
-				// }
 				self.deckLength = oppnentHandLength;
 			});
             
@@ -168,7 +163,11 @@ export default class Game extends Phaser.Scene {
 	create() {
 		let self = this;
 		
+		this.showScore = new ShowScore(this);
+		this.skillManager = new SkillManager(this);
+
 		//Render button
+
 		this.dealText = this.add.text(75, 350, ['End Round'])
 			.setFontSize(18).setFontFamily('Roboto').setColor('white').setInteractive();
 
@@ -180,23 +179,29 @@ export default class Game extends Phaser.Scene {
 			timeScale: 1
 		});
 
+		//Array to hold card backs
+		this.alreadyMapped = [];
 
-		self.clock.start();
-		this.add.text(1100, 200, '').setName('timer');
-
+		this.add.text(1100, 200, '').setName('timer');	
+		
 		//PlayerA
 		this.dropZone1 = this.zone.renderZone(600, 575);
+		this.dropZone1.visible = false;
 		this.outline = this.zone.renderOutline(this.dropZone1, 0x69ff8a);
 		this.dropZone1.data.set('id', '1');
 		this.dropZone1.data.set('placed', []);
 		this.dropZone2 = this.zone.renderZone(600, 450);
+		this.dropZone2.visible = false;
 		this.outline = this.zone.renderOutline(this.dropZone2, 0x69ff8a);
 		this.dropZone2.data.set('id', '2');
 		this.dropZone2.data.set('placed', []);
-
 		//PlayerB
 		this.outline1 = this.zone.renderOutlineWithoutDropZone(600, 275, 0xfc3549, 'outline1');
 		this.outline2 = this.zone.renderOutlineWithoutDropZone(600, 150, 0xfc3549, 'outline2');
+
+		//Take ram cache to this variables (important at update scene)
+		this.scoreLine1 = [];
+		this.scoreLine2 = [];
 
 		//render prop Box
 
@@ -211,27 +216,84 @@ export default class Game extends Phaser.Scene {
 		self.deckId = this.cache.json.get('card').body.deck._id;
 		const allCards = this.cache.json.get('allcards').body;
 		self.cardManager = new CardManager(loader, self, cardsFromDeck,self.deckId,outlineEnemy1,outlineEnemy2,allCards, [], this.dropZone1, this.dropZone2);
-		// self.cardManager.renderIfTableIsEmpty();
 		
 
+
+		this.socket.on('sendPlayer', (data)=> {
+			//oppnentHandLength
+			const {oppnentHandLength, enemyDeckId} = data;
+			let oponentText = self.children.getByName('opponent');
+			oponentText.visible = false;
+			self.deckLength = oppnentHandLength;
+			self.enemyDeckId = enemyDeckId;
+		});
 
 		this.socket.on('error',(error)=>{
 			alert(error?.message);
 		});
 
 		this.socket.on('disconnect',()=> {
-			let confirm = confirm('You were disconnected from server');
+			let confirm = window.confirm('You were disconnected from server');
 			if(confirm == true){
 				window.location.reload();
 			}   
 		});
 
+		this.socket.on('endOfGame', function(data) {
+			let {winner} = data;
+
+			let allObj = self.children.getAll();
+			allObj.map((e) => {
+				e.visible = false;
+			});
+			if(winner === true) {
+				self.add.text(640,390,'You win!',{ fontFamily: 'Arial', fontSize: 64, color: 'white' });
+			}
+			else{
+				self.add.text(640,390,'You lose!',{ fontFamily: 'Arial', fontSize: 64, color: 'white' });
+			}
+		});
+		
 		this.socket.on('roundSkipped',()=>{
-			alert('round skipped');
-			//TODO put random card
+			let confirm = window.confirm('You skipped the turn');
+			if(confirm){
+				let handObj = self.children.getAll('y', 710);
+				let randomObj = _.sample(handObj);
+				self.dropZone1.data.values.cards++;
+				let placed = self.dropZone1.data.get('placed');
+				placed.push(randomObj.id);
+				self.dropZone1.data.set('placed', placed);
+				let returnCard = {
+					x: randomObj.x,
+					y: randomObj.y,
+					width: randomObj.width,
+					id: randomObj.id,
+					deckId: randomObj.deck_id,
+					power: randomObj.power
+				};
+				let returnData = {
+					fieldId: self.dropZone1.data.get('id'),
+					cardName: randomObj.name,
+					card: returnCard,
+					cardId: randomObj.id,
+					field: {
+						x: self.dropZone1.x / 2,
+						y: self.dropZone1.y,
+						width: self.dropZone1.width
+					}
+				};
+				self.socket.emit('put',returnData);
+				self.input.setDraggable(randomObj, false);
+				this.socket.emit('getTable');
+			}
+			
+			
 		});
 
 		this.socket.on('secondPlayerDisconnected',function () {
+			self.clock.stop();
+			let timer = self.children.getByName('timer');
+			timer.text = 'Wait';
 			let startTime = new Date().getTime();
 			let interval = setInterval(function() {
 				if(new Date().getTime() - startTime > 30000){
@@ -251,7 +313,12 @@ export default class Game extends Phaser.Scene {
 						}
 						else{
 							allObj.map((e) => {
-								e.visible = true;
+								if(e.name === 'opponent'){
+									e.visible = false;
+								}
+								else{
+									e.visible = true;
+								}
 							});
 						}
 					});
@@ -262,21 +329,60 @@ export default class Game extends Phaser.Scene {
 		//sockets
 
 		this.socket.on('sendTable', function(data) {
-			console.log('data',data);
-			//TODO sand handFrom server
-			let {table,myHand} = data;
+			let {table,myHand, isMyRound, time} = data;
 			if(table?.table){
 				table = table.table;
 			}
-			self.cardManager.renderIfTableIsEmpty(myHand);
+
+			if(!self.myHand){
+				self.cardManager.renderIfTableIsEmpty(myHand);
+			}
+			self.isMyRound = isMyRound;
+			if(isMyRound && !self.clock.isRunning && self.deckLength){
+				self.timeFromServer = time || 30; 
+				self.clock.start();
+				self.dropZone1.visible = true;
+				self.dropZone2.visible = true;
+			}
+			else{
+				self.clock.stop();
+				self.dropZone1.visible = false;
+				self.dropZone2.visible = false;
+			}
+			console.log('table',table);
+			self.myHand = myHand;
 			self.table = table;
+			self.scoreLine1 = [];
+			self.scoreLine2 = [];
+
 			loader.once(Phaser.Loader.Events.COMPLETE, () => {
 				if(table[0].length !== 0 || table[1].length !== 0  || table[2].length !== 0  || table[3].length !== 0){
 					table.map((line, index) => {
+						let sumPower = 0;
+						let sumShield = 0;
 						line.map((card) => {
+							//Count a score
+							switch(index){
+								case 0:
+									sumPower+=card.power;
+									sumShield+=card.shield;
+									break;
+								case 1:
+									sumPower+=card.power;
+									sumShield+=card.shield;
+									break;
+								case 2:
+									self.scoreLine1.push(card.shield, card.power);
+									break;
+								case 3:
+									self.scoreLine2.push(card.shield, card.power);
+									break;
+							}
+
 							let allDeckArr = self.children.getAll('deck_id', self.deckId);
 							let cardObject = allDeckArr.filter(elem => elem.name === card.name);
-							self.cardManager.moveCard(card, cardObject[0], index, myHand);
+							console.log(card);
+							self.cardManager.moveCard(card, cardObject[0], index, myHand, card.power, card.shield);
 							if(index == 2 || index == 3){
 								const checkLenOfTable = table[2].length + table[3].length;
 								if(checkLenOfTable !== self.alreadyMapped.length){
@@ -293,9 +399,15 @@ export default class Game extends Phaser.Scene {
 								}
 							}
 						});
+						if(index === 0){
+							self.dropZone1.data.set('shield', sumShield);
+							self.dropZone1.data.set('power', sumPower);
+						}
+						if(index === 1){
+							self.dropZone2.data.set('shield', sumShield);
+							self.dropZone2.data.set('power', sumPower);
+						}
 					});
-				}else{
-					self.cardManager.renderIfTableIsEmpty(myHand);
 				}
 			});
 			loader.start();
@@ -303,17 +415,16 @@ export default class Game extends Phaser.Scene {
         
 		this.socket.emit('getTable');
         
-		//TODO: Enable putting card for me, i need boolean to check if its my turn on drag&drop
+		
 		this.socket.on('myRound', function (data) {
 			self.clock.start();
-			console.log(data);
 		});
         
 
 		//End round button
 		this.dealCards = () => {
 			self.socket.emit('endRound');
-			console.log('Round ended');
+			self.clock.stop();
 		};
 
 		//Render a text in prop-box
@@ -346,6 +457,7 @@ export default class Game extends Phaser.Scene {
 			self.shieldValue.text = gameObject.shield;
 			gameObject.x = dragX;
 			gameObject.y = dragY;
+			console.log(gameObject.skill);
 		});
 
 		this.input.on('gameobjectdown', function (pointer, gameObject){
@@ -377,13 +489,30 @@ export default class Game extends Phaser.Scene {
 			dropZone.data.values.cards++;
 			let placed = dropZone.data.get('placed');
 			placed.push(gameObject.id);
+			switch(gameObject.skill){
+				case 'buffYourHand':
+					self.skillManager.buffYourHand(gameObject.deck_id);
+					break;
+				case 'attackEnemy':
+					self.skillManager.attackEnemyCard(self.enemyDeckId);
+			}
+
+			let buff = gameObject.buffed || false;
+			let deBuff = gameObject.deBuffed || false;
+
 			dropZone.data.set('placed', placed);
+			dropZone.data.set('shield', gameObject.shield);
+			dropZone.data.set('power', gameObject.power);
+
 			let returnCard = {
 				x: gameObject.x,
 				y: gameObject.y,
 				width: gameObject.width,
 				id: gameObject.id,
-				deckId: gameObject.deck_id
+				deckId: gameObject.deck_id,
+				power: gameObject.power,
+				buffed: buff,
+				deBuffed: deBuff
 			};
 			let returnData = {
 				fieldId: dropZone.data.get('id'),
@@ -404,11 +533,9 @@ export default class Game extends Phaser.Scene {
 	update() {
 		if (this.deckLength>0) {
 			this.enemyCards = _.range(this.deckLength);
-			this.alreadyMapped = [];
 			let loader = new Phaser.Loader.LoaderPlugin(this);
 			if(this.table){
-				const len = this.table[2].length + this.table[3].length;
-				const lenToRender = this.deckLength - len;
+				const lenToRender = this.deckLength;
 				for(let i = 0; i < lenToRender; i++){
 					let src = 'src/assets/cardback.png';
 					let name = 'cardback'+i;
@@ -420,17 +547,40 @@ export default class Game extends Phaser.Scene {
 				}
 				this.deckLength = 0;
 			}
+			if(this.isMyRound === true){
+				this.clock.start();
+			}
 		}
 
 		if(this.clock.isRunning){
 			let timer = this.children.getByName('timer');
-			const timeLeft = 30 - Math.floor(this.clock.now * 0.001);
-			timer.text = 'Time: ' + timeLeft + 's';
-			if(timeLeft === 0){
-				this.clock.stop();
-				this.socket.emit('endRound');
+			const timeLeft = this.timeFromServer - Math.floor(this.clock.now * 0.001);
+			if(!isNaN(timeLeft)){
+				timer.text = 'Time: ' + timeLeft + 's';
+				if(timeLeft === 0){
+					this.clock.stop();
+					this.socket.emit('endRound');
+				}
 			}
+			else{
+				timer.text = 'Wait';
+			}
+		}
+		else {
+			let timer = this.children.getByName('timer');
+			timer.text = 'Wait';
 		}	
 
+		if(!_.isEmpty(this.enemyCards)){
+			let oponentText = this.children.getByName('opponent');
+			oponentText.visible = false;
+		}
+
+		if(this.dropZone1 && this.dropZone2){
+			this.showScore.checkIfScoreIsActive(this.dropZone1, 'power1');
+			this.showScore.checkIfScoreIsActive(this.dropZone2, 'power2');
+		}
+		this.showScore.checkScoreOnEnemy(this.scoreLine1, 'power3');
+		this.showScore.checkScoreOnEnemy(this.scoreLine2, 'power4');
 	}
 }
