@@ -6,7 +6,7 @@ import ShowScore from '../helpers/showScore';
 import SkillManager from '../helpers/skillManager';
 
 var _ = require('lodash');
-// TODO - czasami wywala mapping
+
 export default class Game extends Phaser.Scene {
 	constructor() {
 		super({
@@ -354,10 +354,10 @@ export default class Game extends Phaser.Scene {
 			self.table = table;
 			self.scoreLine1 = [];
 			self.scoreLine2 = [];
-
 			loader.once(Phaser.Loader.Events.COMPLETE, () => {
 				if(table[0].length !== 0 || table[1].length !== 0  || table[2].length !== 0  || table[3].length !== 0){
 					table.map((line, index) => {
+						
 						let sumPower = 0;
 						let sumShield = 0;
 						line.map((card) => {
@@ -378,11 +378,9 @@ export default class Game extends Phaser.Scene {
 									self.scoreLine2.push(card.shield, card.power);
 									break;
 							}
-
 							let allDeckArr = self.children.getAll('deck_id', self.deckId);
 							let cardObject = allDeckArr.filter(elem => elem.name === card.name);
-							console.log(card);
-							self.cardManager.moveCard(card, cardObject[0], index, myHand, card.power, card.shield);
+							self.cardManager.moveCard(card, cardObject[0], index, card.power, card.shield);
 							if(index == 2 || index == 3){
 								const checkLenOfTable = table[2].length + table[3].length;
 								if(checkLenOfTable !== self.alreadyMapped.length){
@@ -457,11 +455,11 @@ export default class Game extends Phaser.Scene {
 			self.shieldValue.text = gameObject.shield;
 			gameObject.x = dragX;
 			gameObject.y = dragY;
-			console.log(gameObject.skill);
 		});
 
 		this.input.on('gameobjectdown', function (pointer, gameObject){
 			if(gameObject.name !== ''){
+				console.log(gameObject);
 				self.nameValue.text = gameObject.name;
 				self.descriptionValue.text = gameObject.description;
 				self.powerValue.text = gameObject.power;
@@ -526,7 +524,7 @@ export default class Game extends Phaser.Scene {
 				}
 			};
 			self.socket.emit('put',returnData);
-			self.input.setDraggable(gameObject, false);
+			
 		});
 	}
 
@@ -541,7 +539,7 @@ export default class Game extends Phaser.Scene {
 					let name = 'cardback'+i;
 					loader.image(name, src);
 					loader.once(Phaser.Loader.Events.COMPLETE, () => {
-						this.add.image(275 + (i * 100), 40, name).setScale(0.1, 0.1).setName(name);
+						this.add.image(275 + (i * 100), 35, name).setScale(0.08, 0.08).setName(name);
 					});
 					loader.start();
 				}

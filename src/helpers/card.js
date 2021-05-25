@@ -3,7 +3,7 @@ export default class Card {
         this.render = (x, y, sprite, name, power, shield, description, id, deckId,alreadyPlaced = null, skill,buffed = false) => {
             let card;
             if(alreadyPlaced === null){
-                card = scene.add.image(x, y, sprite).setScale(0.2, 0.2).setName(name).setInteractive();
+                card = scene.add.image(x, y, sprite).setScale(0.1, 0.1).setName(name).setInteractive();
                 card.name = name;
                 card.power = power;
                 card.shield = shield;
@@ -15,7 +15,7 @@ export default class Card {
                 scene.input.setDraggable(card);
             }
             else {
-                card = scene.add.image(x, y, sprite).setScale(0.2, 0.2).setName(name).setInteractive();
+                card = scene.add.image(x, y, sprite).setScale(0.1, 0.1).setName(name).setInteractive();
                 card.name = name;
                 card.power = power;
                 card.shield = shield;

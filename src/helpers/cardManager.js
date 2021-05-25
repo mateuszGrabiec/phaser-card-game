@@ -1,4 +1,5 @@
 import Card from '../helpers/card';
+var _ = require('lodash');
 
 export default class CardManager {
     constructor(loader,self,cardsFromDeck,deckId,outlineEnemy1,outlineEnemy2, allCards, alreadyEnemyRendered,dropZone1, dropZone2){
@@ -43,19 +44,25 @@ export default class CardManager {
     
     moveCard(card, cardObject, index, power, shield){
         if(card.deckId === this.deckId){
-			if(!cardObject){
+			if(cardObject && card._id === cardObject.id){
+				this.checkAndApplyPosition(cardObject, card, index);
+				this.self.input.setDraggable(cardObject, false);	
+			}
+			else{
+				
 				let filtered = this.allCards.filter(elem => elem._id === card._id);
 				this.checkAndApplyPosition(filtered[0], card, index);
 				this.renderCard(filtered[0],0,true);
-			}
-			else{
-				this.checkAndApplyPosition(cardObject, card, index);
-				this.self.input.setDraggable(cardObject, false);
+				let checkAll = this.self.children.getAll('id', card._id);
+				if(checkAll.length>1){
+					checkAll[0].destroy();
+				}
 			}
 
         }
         else{
             let filtered = this.allCards.filter(elem => elem._id === card._id);
+			
 			filtered[0].power = power;
 			filtered[0].shield = shield;
             this.checkAndApplyPosition(filtered[0], card, index);
