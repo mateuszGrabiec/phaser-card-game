@@ -166,6 +166,7 @@ export default class Game extends Phaser.Scene {
 		this.showScore = new ShowScore(this);
 		this.skillManager = new SkillManager(this);
 
+		self.isFirstTime = true;
 		//Render button
 
 		this.dealText = this.add.text(75, 350, ['End Round'])
@@ -381,21 +382,6 @@ export default class Game extends Phaser.Scene {
 							let allDeckArr = self.children.getAll('deck_id', self.deckId);
 							let cardObject = allDeckArr.filter(elem => elem.name === card.name);
 							self.cardManager.moveCard(card, cardObject[0], index, card.power, card.shield);
-							if(index == 2 || index == 3){
-								const checkLenOfTable = table[2].length + table[3].length;
-								if(checkLenOfTable !== self.alreadyMapped.length){
-									const random = _.sample(self.enemyCards);
-									let backName = 'cardback'+random;
-									let backObject = self.children.getByName(backName);
-									if(backObject){
-										backObject.visible = false;
-									}
-									_.remove(self.enemyCards, function (e) {
-										return e === random;
-									});
-									self.alreadyMapped.push(random);
-								}
-							}
 						});
 						if(index === 0){
 							self.dropZone1.data.set('shield', sumShield);
@@ -404,6 +390,40 @@ export default class Game extends Phaser.Scene {
 						if(index === 1){
 							self.dropZone2.data.set('shield', sumShield);
 							self.dropZone2.data.set('power', sumPower);
+						}
+						if(index === 2 || index === 3){
+							if(!_.isEmpty(line) && self.isMyRound){
+								let backObj = self.children.getAll('back', true);
+								if(!_.isEmpty(backObj)){
+									backObj.map((e) => {
+										e.destroy();
+									});
+								}
+								self.enemyCards = _.range(self.checkBeforeDeck);
+								let loader2 = new Phaser.Loader.LoaderPlugin(self);
+								if(self.table){
+									let minus = 0;
+									if(table[index].length>0){
+										if(!self.isFirstTime){
+											minus = 1;
+										}
+										
+									}
+									self.isFirstTime = false;
+									const lenToRender = self.checkBeforeDeck - minus;
+									for(let i = 0; i < lenToRender; i++){
+										let src = 'src/assets/cardback.png';
+										let name = 'cardback'+i;
+										loader2.image(name, src);
+										loader2.once(Phaser.Loader.Events.COMPLETE, () => {
+											let back = self.add.image(275 + (i * 100), 35, name).setScale(0.08, 0.08).setName(name);
+											back.back = true;
+										});
+										loader2.start();
+										
+									}
+								}
+							}
 						}
 					});
 				}
@@ -529,17 +549,19 @@ export default class Game extends Phaser.Scene {
 	}
 
 	update() {
-		if (this.deckLength>0) {
+		if (this.deckLength>=1) {
 			this.enemyCards = _.range(this.deckLength);
 			let loader = new Phaser.Loader.LoaderPlugin(this);
 			if(this.table){
 				const lenToRender = this.deckLength;
+				this.checkBeforeDeck = this.deckLength;
 				for(let i = 0; i < lenToRender; i++){
 					let src = 'src/assets/cardback.png';
 					let name = 'cardback'+i;
 					loader.image(name, src);
 					loader.once(Phaser.Loader.Events.COMPLETE, () => {
-						this.add.image(275 + (i * 100), 35, name).setScale(0.08, 0.08).setName(name);
+						let back = this.add.image(275 + (i * 100), 35, name).setScale(0.08, 0.08).setName(name);
+						back.back = true;
 					});
 					loader.start();
 				}
@@ -580,5 +602,10 @@ export default class Game extends Phaser.Scene {
 		}
 		this.showScore.checkScoreOnEnemy(this.scoreLine1, 'power3');
 		this.showScore.checkScoreOnEnemy(this.scoreLine2, 'power4');
+
+		let enemy = this.children.getAll('deck_id', this.enemyDeckId);
+		if(!_.isEmpty(enemy)){
+			this.enemyCardsOnTable = enemy;
+		}
 	}
 }
