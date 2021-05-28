@@ -1,4 +1,5 @@
 import Card from '../helpers/card';
+var _ = require('lodash');
 
 export default class CardManager {
     constructor(loader,self,cardsFromDeck,deckId,outlineEnemy1,outlineEnemy2, allCards, alreadyEnemyRendered,dropZone1, dropZone2){
@@ -14,10 +15,8 @@ export default class CardManager {
         this.dropZone2 = dropZone2;
     }
     renderIfTableIsEmpty(myHand){
-		// myHand = myHand || this.cardsFromDeck;
         let handLength = 0;
         for (let card of myHand) {
-			console.log(card);
             this.renderCard(card,handLength);
             handLength++;
         }
@@ -31,28 +30,41 @@ export default class CardManager {
             let shield = card.shield;
             let nameDb = card.name;
             let describe = card.describe;
+			let skill = card.skill;
             let id = card._id;
             let x = card.x || 275 + (element * 100);
             let y = card.y || 710;
             this.loader.image(imgName, src);
             let playerCard = new Card(this.self);
             this.loader.once(Phaser.Loader.Events.COMPLETE, () => {
-                playerCard.render(x, y, name, nameDb, power, shield, describe,id,this.deckId, alreadyPlaced);
+                playerCard.render(x, y, name, nameDb, power, shield, describe,id,this.deckId, alreadyPlaced, skill);
             });
             this.loader.start();
     }
     
-    moveCard(card, cardObject, index,myHand){
-		if(_.isEmpty(cardObject)){
-			//TODO impl render if it's 1st time
-			cardObject = this.renderCard(card);
-		}
+    moveCard(card, cardObject, index, power, shield){
         if(card.deckId === this.deckId){
-            this.checkAndApplyPosition(cardObject, card, index);
-            this.self.input.setDraggable(cardObject, false);
+			if(cardObject && card._id === cardObject.id){
+				this.checkAndApplyPosition(cardObject, card, index);
+				this.self.input.setDraggable(cardObject, false);	
+			}
+			else{
+				
+				let filtered = this.allCards.filter(elem => elem._id === card._id);
+				this.checkAndApplyPosition(filtered[0], card, index);
+				this.renderCard(filtered[0],0,true);
+				let checkAll = this.self.children.getAll('id', card._id);
+				if(checkAll.length>1){
+					checkAll[0].destroy();
+				}
+			}
+
         }
         else{
             let filtered = this.allCards.filter(elem => elem._id === card._id);
+			
+			filtered[0].power = power;
+			filtered[0].shield = shield;
             this.checkAndApplyPosition(filtered[0], card, index);
             if(this.alreadyEnemyRendered.length === 0){
                 this.renderCard(filtered[0],0,true);
