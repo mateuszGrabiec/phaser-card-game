@@ -63,7 +63,7 @@ export default class Game extends Phaser.Scene {
 				const {oppnentHandLength} = data;
 				let oponentText = self.children.getByName('opponent');
 				oponentText.visible = false;
-				self.deckLength = oppnentHandLength;
+				self.oppnentHandLength = oppnentHandLength;
 			});
             
 		}
@@ -221,12 +221,14 @@ export default class Game extends Phaser.Scene {
 
 
 		this.socket.on('sendPlayer', (data)=> {
+			console.log('\n\n\n\n SECOND PLAYER CONNECTED');
 			//oppnentHandLength
 			const {oppnentHandLength, enemyDeckId} = data;
 			let oponentText = self.children.getByName('opponent');
 			oponentText.visible = false;
-			self.deckLength = oppnentHandLength;
+			self.oppnentHandLength = oppnentHandLength;
 			self.enemyDeckId = enemyDeckId;
+			// this.socket.emit('getTable');
 		});
 
 		this.socket.on('error',(error)=>{
@@ -330,6 +332,7 @@ export default class Game extends Phaser.Scene {
 		//sockets
 
 		this.socket.on('sendTable', function(data) {
+			console.log('\n\n\nI GET TABLE');
 			let {table,myHand, isMyRound, time} = data;
 			if(table?.table){
 				table = table.table;
@@ -338,12 +341,15 @@ export default class Game extends Phaser.Scene {
 			if(!self.myHand){
 				self.cardManager.renderIfTableIsEmpty(myHand);
 			}
+			console.log('isMyRound',isMyRound);
+			console.log('opponentLength',self.oppnentHandLength);
 			self.isMyRound = isMyRound;
-			if(isMyRound && !self.clock.isRunning && self.deckLength){
-				self.timeFromServer = time || 30; 
-				self.clock.start();
+			if(isMyRound && !self.clock.isRunning){
+				console.log('IN THIS IF');
 				self.dropZone1.visible = true;
 				self.dropZone2.visible = true;
+				self.timeFromServer = time || 30; 
+				self.clock.start();
 			}
 			else{
 				self.clock.stop();
@@ -432,11 +438,6 @@ export default class Game extends Phaser.Scene {
 		});
         
 		this.socket.emit('getTable');
-        
-		
-		this.socket.on('myRound', function (data) {
-			self.clock.start();
-		});
         
 
 		//End round button
@@ -549,12 +550,12 @@ export default class Game extends Phaser.Scene {
 	}
 
 	update() {
-		if (this.deckLength>=1) {
-			this.enemyCards = _.range(this.deckLength);
+		if (this.oppnentHandLength>=1) {
+			this.enemyCards = _.range(this.oppnentHandLength);
 			let loader = new Phaser.Loader.LoaderPlugin(this);
 			if(this.table){
-				const lenToRender = this.deckLength;
-				this.checkBeforeDeck = this.deckLength;
+				const lenToRender = this.oppnentHandLength;
+				this.checkBeforeDeck = this.oppnentHandLength;
 				for(let i = 0; i < lenToRender; i++){
 					let src = 'src/assets/cardback.png';
 					let name = 'cardback'+i;
@@ -565,10 +566,7 @@ export default class Game extends Phaser.Scene {
 					});
 					loader.start();
 				}
-				this.deckLength = 0;
-			}
-			if(this.isMyRound === true){
-				this.clock.start();
+				this.oppnentHandLength = 0;
 			}
 		}
 
