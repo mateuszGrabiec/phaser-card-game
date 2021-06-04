@@ -85,14 +85,17 @@ export default class CardManager {
     }
     checkAndApplyPosition(objectToMove, card, index){
 		objectToMove.x = card.x;
-		if(index === 2){
+        if(index === 0 ){
+            objectToMove.y  = this.dropZone1.y;
+        }
+        else if(index === 1){
+			objectToMove.y  = this.dropZone2.y;
+		}
+		else if(index === 2){
 			objectToMove.y  = this.outlineEnemy1;
 		}
 		else if(index === 3){
 			objectToMove.y  = this.outlineEnemy2;
-		}
-		else {
-			objectToMove.y = card.y;
 		}
     }
 }

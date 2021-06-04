@@ -59,7 +59,6 @@ export default class Game extends Phaser.Scene {
 			
 			//WAITING FOR SECOND PLAYER
 			self.socket.on('sendPlayer', (data)=> {
-				//oppnentHandLength
 				const {oppnentHandLength} = data;
 				let oponentText = self.children.getByName('opponent');
 				oponentText.visible = false;
@@ -332,7 +331,11 @@ export default class Game extends Phaser.Scene {
 		//sockets
 
 		this.socket.on('sendTable', function(data) {
-			console.log('\n\n\nI GET TABLE');
+			// /// DESTOYING ALL CARDS
+			// let allObj = self.children.getAll();
+			// allObj.map((e) => {
+			// 	e.destroy();
+			// });
 			let {table,myHand, isMyRound, time} = data;
 			if(table?.table){
 				table = table.table;
@@ -341,11 +344,8 @@ export default class Game extends Phaser.Scene {
 			if(!self.myHand){
 				self.cardManager.renderIfTableIsEmpty(myHand);
 			}
-			console.log('isMyRound',isMyRound);
-			console.log('opponentLength',self.oppnentHandLength);
 			self.isMyRound = isMyRound;
 			if(isMyRound && !self.clock.isRunning){
-				console.log('IN THIS IF');
 				self.dropZone1.visible = true;
 				self.dropZone2.visible = true;
 				self.timeFromServer = time || 30; 
@@ -364,7 +364,7 @@ export default class Game extends Phaser.Scene {
 			loader.once(Phaser.Loader.Events.COMPLETE, () => {
 				if(table[0].length !== 0 || table[1].length !== 0  || table[2].length !== 0  || table[3].length !== 0){
 					table.map((line, index) => {
-						
+
 						let sumPower = 0;
 						let sumShield = 0;
 						line.map((card) => {
@@ -533,6 +533,7 @@ export default class Game extends Phaser.Scene {
 				buffed: buff,
 				deBuffed: deBuff
 			};
+			console.log(returnCard.buffed);
 			let returnData = {
 				fieldId: dropZone.data.get('id'),
 				cardName: gameObject.name,
@@ -545,7 +546,7 @@ export default class Game extends Phaser.Scene {
 				}
 			};
 			self.socket.emit('put',returnData);
-			
+			self.socket.emit('getTable');
 		});
 	}
 
