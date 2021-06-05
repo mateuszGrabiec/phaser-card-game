@@ -231,6 +231,18 @@ export default class Game extends Phaser.Scene {
 			// this.socket.emit('getTable');
 		});
 
+		this.socket.on('roundStatus',(data)=>{
+			let {roundStatus} = data;
+			alert('Round '+roundStatus);
+			self.socket.emit('getTable');
+		});
+
+		this.socket.on('gameStatus',(data)=>{
+			let {gameStatus} = data;
+			alert('Game '+gameStatus);
+			self.socket.emit('getTable');
+		});
+
 		this.socket.on('error',(error)=>{
 			alert(error?.message);
 		});
