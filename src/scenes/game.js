@@ -63,6 +63,7 @@ export default class Game extends Phaser.Scene {
 				let oponentText = self.children.getByName('opponent');
 				oponentText.visible = false;
 				self.oppnentHandLength = oppnentHandLength;
+				self.socket.emit('getTable');
 			});
             
 		}
@@ -228,6 +229,18 @@ export default class Game extends Phaser.Scene {
 			self.oppnentHandLength = oppnentHandLength;
 			self.enemyDeckId = enemyDeckId;
 			// this.socket.emit('getTable');
+		});
+
+		this.socket.on('roundStatus',(data)=>{
+			let {roundStatus} = data;
+			alert('Round '+roundStatus);
+			self.socket.emit('getTable');
+		});
+
+		this.socket.on('gameStatus',(data)=>{
+			let {gameStatus} = data;
+			alert('Game '+gameStatus);
+			self.socket.emit('getTable');
 		});
 
 		this.socket.on('error',(error)=>{
@@ -443,7 +456,7 @@ export default class Game extends Phaser.Scene {
 		//End round button
 		this.dealCards = () => {
 			self.socket.emit('endRound');
-			self.clock.stop();
+			self.clock.stop(); 
 		};
 
 		//Render a text in prop-box
@@ -578,7 +591,7 @@ export default class Game extends Phaser.Scene {
 				timer.text = 'Time: ' + timeLeft + 's';
 				if(timeLeft === 0){
 					this.clock.stop();
-					this.socket.emit('endRound');
+					// this.socket.emit('endRound');
 				}
 			}
 			else{
