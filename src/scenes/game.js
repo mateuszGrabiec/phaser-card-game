@@ -63,7 +63,6 @@ export default class Game extends Phaser.Scene {
 				let oponentText = self.children.getByName('opponent');
 				oponentText.visible = false;
 				self.oppnentHandLength = oppnentHandLength;
-				self.socket.emit('getTable');
 			});
             
 		}
@@ -219,16 +218,18 @@ export default class Game extends Phaser.Scene {
 		self.cardManager = new CardManager(loader, self, cardsFromDeck,self.deckId,outlineEnemy1,outlineEnemy2,allCards, [], this.dropZone1, this.dropZone2);
 		
 
-
 		this.socket.on('sendPlayer', (data)=> {
-			console.log('\n\n\n\n SECOND PLAYER CONNECTED');
-			//oppnentHandLength
 			const {oppnentHandLength, enemyDeckId} = data;
 			let oponentText = self.children.getByName('opponent');
 			oponentText.visible = false;
 			self.oppnentHandLength = oppnentHandLength;
 			self.enemyDeckId = enemyDeckId;
-			// this.socket.emit('getTable');
+			if(!self.clock.isRunning){
+				self.socket.emit('getTable');
+			}else{
+				self.clock.stop();
+				self.socket.emit('getTable');
+			}
 		});
 
 		this.socket.on('roundStatus',(data)=>{
@@ -270,8 +271,6 @@ export default class Game extends Phaser.Scene {
 		});
 		
 		this.socket.on('roundSkipped',()=>{
-			let confirm = window.confirm('You skipped the turn');
-			if(confirm){
 				let handObj = self.children.getAll('y', 710);
 				let randomObj = _.sample(handObj);
 				self.dropZone1.data.values.cards++;
@@ -299,10 +298,7 @@ export default class Game extends Phaser.Scene {
 				};
 				self.socket.emit('put',returnData);
 				self.input.setDraggable(randomObj, false);
-				this.socket.emit('getTable');
-			}
-			
-			
+				alert('You skipped the turn');
 		});
 
 		this.socket.on('secondPlayerDisconnected',function () {
@@ -363,8 +359,13 @@ export default class Game extends Phaser.Scene {
 				self.dropZone2.visible = true;
 				self.timeFromServer = time || 30; 
 				self.clock.start();
-			}
-			else{
+			}else if(isMyRound){
+				self.clock.stop();
+				self.dropZone1.visible = true;
+				self.dropZone2.visible = true;
+				self.timeFromServer = time || 30;
+				self.clock.start();
+			}else{
 				self.clock.stop();
 				self.dropZone1.visible = false;
 				self.dropZone2.visible = false;
@@ -449,14 +450,15 @@ export default class Game extends Phaser.Scene {
 			});
 			loader.start();
 		});
-        
-		this.socket.emit('getTable');
-        
 
 		//End round button
 		this.dealCards = () => {
-			self.socket.emit('endRound');
-			self.clock.stop(); 
+			if(self.isMyRound){
+				self.socket.emit('endRound');
+				self.clock.stop();
+			}else{
+				console.log('You can end round only when is your round');
+			}
 		};
 
 		//Render a text in prop-box
@@ -559,7 +561,6 @@ export default class Game extends Phaser.Scene {
 				}
 			};
 			self.socket.emit('put',returnData);
-			self.socket.emit('getTable');
 		});
 	}
 
