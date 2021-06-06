@@ -216,10 +216,9 @@ export default class Game extends Phaser.Scene {
 		self.deckId = this.cache.json.get('card').body.deck._id;
 		const allCards = this.cache.json.get('allcards').body;
 		self.cardManager = new CardManager(loader, self, cardsFromDeck,self.deckId,outlineEnemy1,outlineEnemy2,allCards, [], this.dropZone1, this.dropZone2);
-
+		
 
 		this.socket.on('sendPlayer', (data)=> {
-			//oppnentHandLength
 			const {oppnentHandLength, enemyDeckId} = data;
 			let oponentText = self.children.getByName('opponent');
 			oponentText.visible = false;
@@ -361,8 +360,6 @@ export default class Game extends Phaser.Scene {
 				self.timeFromServer = time || 30; 
 				self.clock.start();
 			}else if(isMyRound){
-				//TODO Refresh clock
-				console.log('\n\n\n fster res from server');
 				self.clock.stop();
 				self.dropZone1.visible = true;
 				self.dropZone2.visible = true;
@@ -456,8 +453,12 @@ export default class Game extends Phaser.Scene {
 
 		//End round button
 		this.dealCards = () => {
-			self.socket.emit('endRound');
-			self.clock.stop(); 
+			if(self.isMyRound){
+				self.socket.emit('endRound');
+				self.clock.stop();
+			}else{
+				console.log('You can end round only when is your round');
+			}
 		};
 
 		//Render a text in prop-box
