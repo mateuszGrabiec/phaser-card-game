@@ -242,7 +242,19 @@ export default class Game extends Phaser.Scene {
 
 		this.socket.on('gameStatus',(data)=>{
 			let {gameStatus} = data;
-			alert('Game '+gameStatus);
+			let allObj = self.children.getAll();
+			allObj.map((e) => {
+				e.visible = false;
+			});
+			if(gameStatus === 'WIN') {
+				self.add.text(550,490,'You win!',{ fontFamily: 'Arial', fontSize: 64, color: 'white' });
+			}
+			else if(gameStatus === 'LOSE'){
+				self.add.text(550,490,'You lose!',{ fontFamily: 'Arial', fontSize: 64, color: 'white' });
+			}
+			else{
+				self.add.text(550,490,'It is a draw!',{ fontFamily: 'Arial', fontSize: 64, color: 'white' });
+			}
 			self.socket.emit('getTable');
 		});
 
@@ -262,21 +274,6 @@ export default class Game extends Phaser.Scene {
 			if(confirm == true){
 				window.location.reload();
 			}   
-		});
-
-		this.socket.on('endOfGame', function(data) {
-			let {winner} = data;
-
-			let allObj = self.children.getAll();
-			allObj.map((e) => {
-				e.destroy();
-			});
-			if(winner === true) {
-				self.add.text(640,390,'You win!',{ fontFamily: 'Arial', fontSize: 64, color: 'white' });
-			}
-			else{
-				self.add.text(640,390,'You lose!',{ fontFamily: 'Arial', fontSize: 64, color: 'white' });
-			}
 		});
 		
 		this.socket.on('roundSkipped',()=>{
@@ -426,7 +423,13 @@ export default class Game extends Phaser.Scene {
 							self.dropZone2.data.set('power', sumPower);
 						}
 						if(index === 2 || index === 3){
-							if(!_.isEmpty(line) && self.isMyRound){
+							let backObj = self.children.getAll('back', true);
+							if(!_.isEmpty(backObj)){
+								backObj.map((e) => {
+									e.destroy();
+								});
+							}
+							if(!_.isEmpty(line)){
 								let backObj = self.children.getAll('back', true);
 								if(!_.isEmpty(backObj)){
 									backObj.map((e) => {
@@ -616,12 +619,17 @@ export default class Game extends Phaser.Scene {
 		}
 		else {
 			let timer = this.children.getByName('timer');
-			timer.text = 'Wait';
+			if(timer){
+				timer.text = 'Wait';
+			}
 		}	
 
 		if(!_.isEmpty(this.enemyCards)){
 			let oponentText = this.children.getByName('opponent');
-			oponentText.visible = false;
+			if(oponentText){
+				oponentText.visible = false;
+			}
+			
 		}
 
 		if(this.dropZone1 && this.dropZone2){
@@ -633,10 +641,11 @@ export default class Game extends Phaser.Scene {
 
 		let enemy = this.children.getAll('deck_id', this.enemyDeckId);
 		let bar = this.children.getByName('bar1');
+		let cardback = this.children.getByName('cardback1');
 		if(!_.isEmpty(enemy)){
 			this.enemyCardsOnTable = enemy;
 		}
-		if(bar && enemy){
+		if(bar && cardback){
 			for(let i = 0; i<12; ++i){
 				let barFind = this.children.getByName('bar' + i);
 				barFind.destroy();
