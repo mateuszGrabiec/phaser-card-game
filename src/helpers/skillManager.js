@@ -24,21 +24,23 @@ export default class SkillManager {
 	}
 
 	attackEnemyCard(enemyDeckId){
-		// let enemyCards = this.getEnemyCards(enemyDeckId);
-		// console.log(enemyCards);
-		// let filtered = _.filter(enemyCards, function(card){
-		// 	return card.debuffed !== true;
-		// });
-		// let shuffled = filtered.sort(function(){return .5 - Math.random();}) || [];
-		// const selected=shuffled.pop() || false;
-		// let randomCardToDeBuff = selected;
-		// randomCardToDeBuff.debuffed = true;
-		// if(randomCardToDeBuff.shield < 10){
-		// 	randomCardToDeBuff.power -= 10; 
-		// }
-		// else{
-		// 	randomCardToDeBuff.shield -= 10; 
-		// }
-		
+		let enemyCards = this.getEnemyCards(enemyDeckId);
+		if(!_.isEmpty(enemyCards)){
+			let filtered = _.filter(enemyCards, function(card){
+				return card.debuffed !== true;
+			});
+			let shuffled = filtered.sort(function(){return .5 - Math.random();}) || [];
+			const selected=shuffled.pop() || false;
+			console.log(selected);
+			let randomCardToDeBuff = selected;
+			randomCardToDeBuff.debuffed = true;
+			if(randomCardToDeBuff.shield < 10){
+				randomCardToDeBuff.power -= 10; 
+			}
+			else{
+				randomCardToDeBuff.shield -= 10; 
+			}
+			
+		}
 	}
 }
