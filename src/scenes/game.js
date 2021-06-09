@@ -235,9 +235,11 @@ export default class Game extends Phaser.Scene {
 
 		this.socket.on('roundStatus',(data)=>{
 			let {roundStatus} = data;
-			alert('Round '+roundStatus);
+			let confirm = window.confirm('Round '+roundStatus);
 			self.socket.emit('getTable');
-			window.location.reload();
+			if(confirm){
+				window.location.reload();
+			}
 		});
 
 		this.socket.on('gameStatus',(data)=>{
@@ -346,7 +348,10 @@ export default class Game extends Phaser.Scene {
 		//sockets
 
 		this.socket.on('sendTable', function(data) {
-			let {table,myHand, isMyRound, time} = data;
+			let {table,myHand, isMyRound, time, opponentHandLength} = data;
+
+			opponentHandLength = self.opponentHandLength || 3;
+			//opponentHandLength = opponentHandLength || self.opponentHandLength ;
 			if(table?.table){
 				table = table.table;
 			}
@@ -422,49 +427,30 @@ export default class Game extends Phaser.Scene {
 							self.dropZone2.data.set('shield', sumShield);
 							self.dropZone2.data.set('power', sumPower);
 						}
-						if(index === 2 || index === 3){
-							let backObj = self.children.getAll('back', true);
-							if(!_.isEmpty(backObj)){
-								backObj.map((e) => {
-									e.destroy();
-								});
-							}
-							if(!_.isEmpty(line)){
-								let backObj = self.children.getAll('back', true);
-								if(!_.isEmpty(backObj)){
-									backObj.map((e) => {
-										e.destroy();
-									});
-								}
-								self.enemyCards = _.range(self.checkBeforeDeck);
-								let loader2 = new Phaser.Loader.LoaderPlugin(self);
-								if(self.table){
-									let minus = 0;
-									if(table[index].length>0){
-										if(!self.isFirstTime){
-											minus = 1;
-										}
-										
-									}
-									self.isFirstTime = false;
-									const lenToRender = self.checkBeforeDeck - minus;
-									for(let i = 0; i < lenToRender; i++){
-										let src = 'src/assets/cardback.png';
-										let name = 'cardback'+i;
-										loader2.image(name, src);
-										loader2.once(Phaser.Loader.Events.COMPLETE, () => {
-											let back = self.add.image(275 + (i * 100), 35, name).setScale(0.08, 0.08).setName(name);
-											back.back = true;
-										});
-										loader2.start();
-										
-									}
-								}
-							}
-						}
 					});
 				}
 			});
+			let backObj = self.children.getAll('back', true);
+			if(!_.isEmpty(backObj)){
+				backObj.map((e) => {
+					e.destroy();
+				});
+			}
+			self.enemyCards = _.range(self.checkBeforeDeck);
+			let loader2 = new Phaser.Loader.LoaderPlugin(self);
+			if(self.table){
+				for(let i = 0; i < opponentHandLength; i++){
+					let src = 'src/assets/cardback.png';
+					let name = 'cardback'+i;
+					loader2.image(name, src);
+					loader2.once(Phaser.Loader.Events.COMPLETE, () => {
+						let back = self.add.image(275 + (i * 100), 35, name).setScale(0.08, 0.08).setName(name);
+						back.back = true;
+					});
+					loader2.start();
+						
+				}
+			}
 			loader.start();
 		});
 
