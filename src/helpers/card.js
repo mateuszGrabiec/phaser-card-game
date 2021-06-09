@@ -22,6 +22,7 @@ export default class Card {
                 card.description = description;
                 card.id = id;
 				card.skill = skill;
+				card.deck_id = deckId;
             }
             return card;
         };

@@ -22,7 +22,7 @@ export default class CardManager {
         }
         
     }
-    renderCard(card, element = 0, alreadyPlaced = null){
+    renderCard(card, element = 0, alreadyPlaced = null, enemyDeckId = null){
             const imgName = card.image.split('.')[0];
             let name = imgName;
             let src = 'src/assets/' + card.image;
@@ -34,15 +34,22 @@ export default class CardManager {
             let id = card._id;
             let x = card.x || 275 + (element * 100);
             let y = card.y || 710;
+			let deckId = null;
+			if(enemyDeckId !== null){
+				deckId = enemyDeckId;
+			}
+			else{
+				deckId = this.deckId;
+			}
             this.loader.image(imgName, src);
             let playerCard = new Card(this.self);
             this.loader.once(Phaser.Loader.Events.COMPLETE, () => {
-                playerCard.render(x, y, name, nameDb, power, shield, describe,id,this.deckId, alreadyPlaced, skill);
+                playerCard.render(x, y, name, nameDb, power, shield, describe,id,deckId, alreadyPlaced, skill, false);
             });
             this.loader.start();
     }
     
-    moveCard(card, cardObject, index, power, shield){
+    moveCard(card, cardObject, index, power, shield, enemyDeckId){
         if(card.deckId === this.deckId){
 			if(cardObject && card._id === cardObject.id){
 				this.checkAndApplyPosition(cardObject, card, index);
@@ -67,7 +74,7 @@ export default class CardManager {
 			filtered[0].shield = shield;
             this.checkAndApplyPosition(filtered[0], card, index);
             if(this.alreadyEnemyRendered.length === 0){
-                this.renderCard(filtered[0],0,true);
+                this.renderCard(filtered[0],0,true,enemyDeckId);
                 this.alreadyEnemyRendered.push({
                     id: filtered[0]._id
                 });
@@ -75,7 +82,7 @@ export default class CardManager {
             else{
                 let findIfRendered = this.alreadyEnemyRendered.filter(elem => elem.id === filtered[0]._id);
                 if (findIfRendered.length === 0){
-                    this.renderCard(filtered[0],0,true);
+                    this.renderCard(filtered[0],0,true,enemyDeckId);
                     this.alreadyEnemyRendered.push({
                         id: filtered[0]._id
                     });
@@ -85,6 +92,7 @@ export default class CardManager {
     }
     checkAndApplyPosition(objectToMove, card, index){
 		objectToMove.x = card.x;
+		
         if(index === 0 ){
             objectToMove.y  = this.dropZone1.y;
         }

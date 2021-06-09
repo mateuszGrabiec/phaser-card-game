@@ -108,7 +108,8 @@ export default class Game extends Phaser.Scene {
 			// create each bar with position, rotation, and alpha
 			const bar = self.add.rectangle(x, y, width, height, 0xffffff, 1)
 				.setAngle(angle)
-				.setAlpha(0.2);
+				.setAlpha(0.2)
+				.setName('bar' + i);
 
 			bars.push(bar);
 
@@ -236,16 +237,36 @@ export default class Game extends Phaser.Scene {
 			let {roundStatus} = data;
 			alert('Round '+roundStatus);
 			self.socket.emit('getTable');
+			window.location.reload();
 		});
 
 		this.socket.on('gameStatus',(data)=>{
 			let {gameStatus} = data;
-			alert('Game '+gameStatus);
+			let allObj = self.children.getAll();
+			allObj.map((e) => {
+				e.visible = false;
+			});
+			if(gameStatus === 'WIN') {
+				self.add.text(550,490,'You win!',{ fontFamily: 'Arial', fontSize: 64, color: 'white' });
+			}
+			else if(gameStatus === 'LOSE'){
+				self.add.text(550,490,'You lose!',{ fontFamily: 'Arial', fontSize: 64, color: 'white' });
+			}
+			else{
+				self.add.text(550,490,'It is a draw!',{ fontFamily: 'Arial', fontSize: 64, color: 'white' });
+			}
 			self.socket.emit('getTable');
 		});
 
 		this.socket.on('error',(error)=>{
 			alert(error?.message);
+			let allMyCards = self.children.getAll('deck_id', self.deckId);
+			allMyCards.map((elem) => {
+				if(elem.y !== 575 || elem.y !== 450 || elem.y !== 275 || elem.y !== 150){
+					elem.y = 710;
+				}
+			});
+
 		});
 
 		this.socket.on('disconnect',()=> {
@@ -253,21 +274,6 @@ export default class Game extends Phaser.Scene {
 			if(confirm == true){
 				window.location.reload();
 			}   
-		});
-
-		this.socket.on('endOfGame', function(data) {
-			let {winner} = data;
-
-			let allObj = self.children.getAll();
-			allObj.map((e) => {
-				e.visible = false;
-			});
-			if(winner === true) {
-				self.add.text(640,390,'You win!',{ fontFamily: 'Arial', fontSize: 64, color: 'white' });
-			}
-			else{
-				self.add.text(640,390,'You lose!',{ fontFamily: 'Arial', fontSize: 64, color: 'white' });
-			}
 		});
 		
 		this.socket.on('roundSkipped',()=>{
@@ -340,11 +346,6 @@ export default class Game extends Phaser.Scene {
 		//sockets
 
 		this.socket.on('sendTable', function(data) {
-			// /// DESTOYING ALL CARDS
-			// let allObj = self.children.getAll();
-			// allObj.map((e) => {
-			// 	e.destroy();
-			// });
 			let {table,myHand, isMyRound, time} = data;
 			if(table?.table){
 				table = table.table;
@@ -401,7 +402,17 @@ export default class Game extends Phaser.Scene {
 							}
 							let allDeckArr = self.children.getAll('deck_id', self.deckId);
 							let cardObject = allDeckArr.filter(elem => elem.name === card.name);
-							self.cardManager.moveCard(card, cardObject[0], index, card.power, card.shield);
+							//console.log("moj deck id", self.deckId);
+							console.log('znalezione obiekty', cardObject);
+							let objToMove = null;
+							if(cardObject.length > 1){
+								objToMove = cardObject[cardObject.length - 1];
+								console.log(objToMove);
+							}
+							else{
+								objToMove = cardObject[0];
+							}
+							self.cardManager.moveCard(card, objToMove, index, card.power, card.shield, self.enemyDeckId);
 						});
 						if(index === 0){
 							self.dropZone1.data.set('shield', sumShield);
@@ -412,7 +423,13 @@ export default class Game extends Phaser.Scene {
 							self.dropZone2.data.set('power', sumPower);
 						}
 						if(index === 2 || index === 3){
-							if(!_.isEmpty(line) && self.isMyRound){
+							let backObj = self.children.getAll('back', true);
+							if(!_.isEmpty(backObj)){
+								backObj.map((e) => {
+									e.destroy();
+								});
+							}
+							if(!_.isEmpty(line)){
 								let backObj = self.children.getAll('back', true);
 								if(!_.isEmpty(backObj)){
 									backObj.map((e) => {
@@ -465,7 +482,7 @@ export default class Game extends Phaser.Scene {
 		this.nameText = this.add.text(1040, 250, ['Name:']);
 		this.nameValue = this.add.text(1100, 250, []);
 		this.describtionText = this.add.text(1040, 280, ['Describtion:']);
-		this.descriptionValue = this.add.text(1040, 310, []);
+		this.descriptionValue = this.add.text(1040, 310, []).setFontSize(12);
 		this.powerText = this.add.text(1040, 340, ['Power:']);
 		this.powerValue = this.add.text(1130, 340, []);
 		this.powerText = this.add.text(1040, 380, ['Shield:']);
@@ -485,7 +502,8 @@ export default class Game extends Phaser.Scene {
 		});
 
 		this.input.on('drag', function(pointer, gameObject, dragX, dragY) {
-			self.nameValue.text = gameObject.name;
+			let arrSplitted = gameObject.name.split(' ');
+			self.nameValue.text = arrSplitted[0];
 			self.descriptionValue.text = gameObject.description;
 			self.powerValue.text = gameObject.power;
 			self.shieldValue.text = gameObject.shield;
@@ -495,8 +513,8 @@ export default class Game extends Phaser.Scene {
 
 		this.input.on('gameobjectdown', function (pointer, gameObject){
 			if(gameObject.name !== ''){
-				console.log(gameObject);
-				self.nameValue.text = gameObject.name;
+				let arrSplitted = gameObject.name.split(' ');
+				self.nameValue.text = arrSplitted[0];
 				self.descriptionValue.text = gameObject.description;
 				self.powerValue.text = gameObject.power;
 				self.shieldValue.text = gameObject.shield;
@@ -601,12 +619,17 @@ export default class Game extends Phaser.Scene {
 		}
 		else {
 			let timer = this.children.getByName('timer');
-			timer.text = 'Wait';
+			if(timer){
+				timer.text = 'Wait';
+			}
 		}	
 
 		if(!_.isEmpty(this.enemyCards)){
 			let oponentText = this.children.getByName('opponent');
-			oponentText.visible = false;
+			if(oponentText){
+				oponentText.visible = false;
+			}
+			
 		}
 
 		if(this.dropZone1 && this.dropZone2){
@@ -617,8 +640,16 @@ export default class Game extends Phaser.Scene {
 		this.showScore.checkScoreOnEnemy(this.scoreLine2, 'power4');
 
 		let enemy = this.children.getAll('deck_id', this.enemyDeckId);
+		let bar = this.children.getByName('bar1');
+		let cardback = this.children.getByName('cardback1');
 		if(!_.isEmpty(enemy)){
 			this.enemyCardsOnTable = enemy;
+		}
+		if(bar && cardback){
+			for(let i = 0; i<12; ++i){
+				let barFind = this.children.getByName('bar' + i);
+				barFind.destroy();
+			}
 		}
 	}
 }
