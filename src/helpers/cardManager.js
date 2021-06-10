@@ -16,11 +16,12 @@ export default class CardManager {
     }
     renderIfTableIsEmpty(myHand){
         let handLength = 0;
-        for (let card of myHand) {
-            this.renderCard(card,handLength);
-            handLength++;
+        if(myHand){
+            myHand.map((card)=>{
+                this.renderCard(card,handLength);
+                handLength++;
+            });
         }
-        
     }
     renderCard(card, element = 0, alreadyPlaced = null, enemyDeckId = null){
             const imgName = card.image.split('.')[0];
