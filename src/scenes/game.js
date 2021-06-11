@@ -237,8 +237,9 @@ export default class Game extends Phaser.Scene {
 		this.socket.on('roundStatus',(data)=>{
 			let {roundStatus} = data;
 			let confirm = window.confirm('Round '+roundStatus);
-			self.socket.emit('getTable');
 			if(confirm){
+				window.location.reload();
+			}else{
 				window.location.reload();
 			}
 		});
@@ -284,6 +285,9 @@ export default class Game extends Phaser.Scene {
 		
 		this.socket.on('roundSkipped',()=>{
 				let handObj = self.children.getAll('y', 710);
+				if(_.isEmpty(handObj)){
+					this.dealCards();
+				}else{
 				let randomObj = _.sample(handObj);
 				self.dropZone1.data.values.cards++;
 				let placed = self.dropZone1.data.get('placed');
@@ -310,6 +314,7 @@ export default class Game extends Phaser.Scene {
 				};
 				self.socket.emit('put',returnData);
 				self.input.setDraggable(randomObj, false);
+			}
 				alert('You skipped the turn');
 		});
 
@@ -354,12 +359,12 @@ export default class Game extends Phaser.Scene {
 		this.socket.on('sendTable', function(data) {
 			let {table,myHand, isMyRound, time, opponentHandLength, roundValue} = data;
 
+
 			let roundValueTest = roundValue || 1;
 			let textToPut = 'Round '+roundValueTest + '/3';
 			let textRound = self.children.getByName('textround');
-			textRound.text = textToPut;
-			opponentHandLength = self.opponentHandLength || 3;
-			//opponentHandLength = opponentHandLength || self.opponentHandLength ;
+			textRound.text = textToPut;	
+			opponentHandLength = opponentHandLength || self.opponentHandLength ;
 			if(table?.table){
 				table = table.table;
 			}
@@ -384,7 +389,7 @@ export default class Game extends Phaser.Scene {
 				self.dropZone1.visible = false;
 				self.dropZone2.visible = false;
 			}
-			console.log('table',table);
+			// console.log('table',table);
 			self.myHand = myHand;
 			self.table = table;
 			self.scoreLine1 = [];
@@ -416,11 +421,11 @@ export default class Game extends Phaser.Scene {
 							let allDeckArr = self.children.getAll('deck_id', self.deckId);
 							let cardObject = allDeckArr.filter(elem => elem.name === card.name);
 							//console.log("moj deck id", self.deckId);
-							console.log('znalezione obiekty', cardObject);
+							// console.log('znalezione obiekty', cardObject);
 							let objToMove = null;
 							if(cardObject.length > 1){
 								objToMove = cardObject[cardObject.length - 1];
-								console.log(objToMove);
+								// console.log(objToMove);
 							}
 							else{
 								objToMove = cardObject[0];
@@ -560,7 +565,7 @@ export default class Game extends Phaser.Scene {
 				buffed: buff,
 				deBuffed: deBuff
 			};
-			console.log(returnCard.buffed);
+			// console.log(returnCard.buffed);
 			let returnData = {
 				fieldId: dropZone.data.get('id'),
 				cardName: gameObject.name,
