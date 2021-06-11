@@ -184,6 +184,7 @@ export default class Game extends Phaser.Scene {
 		this.alreadyMapped = [];
 
 		this.add.text(1100, 200, '').setName('timer');	
+		this.add.text(1080, 170, '').setName('').setName('textround');
 		
 		//PlayerA
 		this.dropZone1 = this.zone.renderZone(600, 575);
@@ -257,6 +258,9 @@ export default class Game extends Phaser.Scene {
 			else{
 				self.add.text(550,490,'It is a draw!',{ fontFamily: 'Arial', fontSize: 64, color: 'white' });
 			}
+			//TODO CHANGE PATH HERE
+			const rankingButton = self.add.text(350, 290, 'Check the ranking - click', { fontFamily: 'Arial', fontSize: 54, color: 'white' }).setInteractive();
+			rankingButton.on('pointerdown', () => { window.location.href = 'https://google.com'; });
 			self.socket.emit('getTable');
 		});
 
@@ -348,8 +352,12 @@ export default class Game extends Phaser.Scene {
 		//sockets
 
 		this.socket.on('sendTable', function(data) {
-			let {table,myHand, isMyRound, time, opponentHandLength} = data;
+			let {table,myHand, isMyRound, time, opponentHandLength, roundValue} = data;
 
+			let roundValueTest = roundValue || 1;
+			let textToPut = 'Round '+roundValueTest + '/3';
+			let textRound = self.children.getByName('textround');
+			textRound.text = textToPut;
 			opponentHandLength = self.opponentHandLength || 3;
 			//opponentHandLength = opponentHandLength || self.opponentHandLength ;
 			if(table?.table){
@@ -460,7 +468,7 @@ export default class Game extends Phaser.Scene {
 				self.socket.emit('endRound');
 				self.clock.stop();
 			}else{
-				console.log('You can end round only when is your round');
+				alert('You can end round only when is your round');
 			}
 		};
 
