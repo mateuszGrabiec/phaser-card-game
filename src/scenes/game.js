@@ -221,11 +221,13 @@ export default class Game extends Phaser.Scene {
 		
 
 		this.socket.on('sendPlayer', (data)=> {
-			const {oppnentHandLength, enemyDeckId} = data;
+			const {oppnentHandLength, enemyDeckId, round} = data;
 			let oponentText = self.children.getByName('opponent');
 			oponentText.visible = false;
 			self.oppnentHandLength = oppnentHandLength;
 			self.enemyDeckId = enemyDeckId;
+			console.log('round \n\n\n',round);
+			self.roundNumber = round;
 			if(!self.clock.isRunning){
 				self.socket.emit('getTable');
 			}else{
@@ -357,11 +359,9 @@ export default class Game extends Phaser.Scene {
 		//sockets
 
 		this.socket.on('sendTable', function(data) {
-			let {table,myHand, isMyRound, time, opponentHandLength, roundValue} = data;
+			let {table,myHand, isMyRound, time, opponentHandLength} = data;
 
-
-			let roundValueTest = roundValue || 1;
-			let textToPut = 'Round '+roundValueTest + '/3';
+			let textToPut = 'Round '+ (self.roundNumber || 1) + '/3';
 			let textRound = self.children.getByName('textround');
 			textRound.text = textToPut;	
 			opponentHandLength = opponentHandLength || self.opponentHandLength ;
